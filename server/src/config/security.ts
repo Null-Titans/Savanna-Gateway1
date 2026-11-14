@@ -53,7 +53,7 @@ export const corsMiddleware = cors(corsOptions);
 /**
  * Standard Rate Limit Error Response Handler
  */
-const rateLimitHandler = (req: Request, res: Response): void => {
+const rateLimitHandler = (_req: Request, res: Response): void => {
   const retryAfter = res.getHeader('Retry-After') ?? '60';
   res.status(429).json({
     success: false,

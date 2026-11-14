@@ -1,5 +1,6 @@
-import express, { type Express } from 'express';
-import pinoHttp from 'pino-http';
+import express, { type Express, type Request } from 'express';
+import type { IncomingMessage, ServerResponse } from 'http';
+import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
 import { logger } from './shared/logger.js';
 import {
@@ -12,6 +13,7 @@ import { notFoundHandler } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
 import { apiV1Router } from './routes/apiV1.js';
+import { speechRouter } from './modules/speech/speech.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -23,14 +25,17 @@ export function createApp(): Express {
   app.use(
     pinoHttp({
       logger,
-      genReqId: (req) => req.id ?? (req.headers['x-request-id'] as string) ?? 'req_unknown',
-      customLogLevel: (_req, res, err) => {
+      genReqId: (req: IncomingMessage) =>
+        (req as unknown as Request).id ??
+        (req.headers['x-request-id'] as string) ??
+        'req_unknown',
+      customLogLevel: (_req: IncomingMessage, res: ServerResponse, err?: Error) => {
         if (res.statusCode >= 500 || err) return 'error';
         if (res.statusCode >= 400) return 'warn';
         return 'info';
       },
       autoLogging: {
-        ignore: (req) => Boolean(req.url?.endsWith('/health')),
+        ignore: (req: IncomingMessage) => Boolean(req.url?.endsWith('/health')),
       },
     })
   );
@@ -49,7 +54,10 @@ export function createApp(): Express {
   // 6. Direct Root Health Check Endpoint
   app.use('/health', healthRouter);
 
-  // 7. Mount Versioned API Gateway Router (/api/v1)
+  // 7. Mount Speech API Boundary (/api/speech)
+  app.use('/api/speech', speechRouter);
+
+  // 8. Mount Versioned API Gateway Router (/api/v1)
   app.use(env.API_PREFIX, apiV1Router);
 
   // 8. 404 Route Catch-All

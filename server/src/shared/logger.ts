@@ -5,6 +5,36 @@ const isDev = env.NODE_ENV === 'development';
 
 export const logger = pino({
   level: env.LOG_LEVEL,
+  redact: {
+    paths: [
+      'req.headers.authorization',
+      'req.headers["x-api-key"]',
+      'req.headers.cookie',
+      'password',
+      '*.password',
+      '*.*.password',
+      'passwordHash',
+      '*.passwordHash',
+      'token',
+      '*.token',
+      'accessToken',
+      'refreshToken',
+      '*.refreshToken',
+      'apiKey',
+      '*.apiKey',
+      'secret',
+      '*.secret',
+      'phone',
+      '*.phone',
+      'phoneNumber',
+      '*.phoneNumber',
+      'identityDocument',
+      '*.identityDocument',
+      'nationalId',
+      '*.nationalId',
+    ],
+    censor: '[REDACTED]',
+  },
   ...(isDev
     ? {
         transport: {

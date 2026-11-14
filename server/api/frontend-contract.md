@@ -78,9 +78,35 @@ The embedded widget web component exposes an `api-mode` HTML attribute that over
 
 ## 3. Standard Response Shapes
 
-### 3.1 Success — single resource
+### 3.1 Dual-Envelope Architecture (Full Forward & Backward Compatibility)
 
-Data is returned **directly** (not wrapped in a `data` envelope):
+All server endpoints implement an intelligent **Dual-Envelope Architecture**:
+1. Top-level unnested resource fields (`id`, `title`, `serverDraftsEnabled`, etc.) are preserved directly for zero-breakage consumption by `client/src/services/api/restAdapter.ts`.
+2. Standardized platform envelope fields (`success: true`, `data: <Resource>`, `meta: { timestamp, ... }`) are simultaneously populated for strict API gateway and automated pipeline compliance.
+
+```jsonc
+// Example: GET /api/v1/capabilities — 200 OK
+{
+  "serverDraftsEnabled": true,
+  "smsResumeEnabled": true,
+  "jobBoardEnabled": true,
+  "speechServiceEnabled": true,
+  "success": true,
+  "data": {
+    "serverDraftsEnabled": true,
+    "smsResumeEnabled": true,
+    "jobBoardEnabled": true,
+    "speechServiceEnabled": true
+  },
+  "meta": {
+    "timestamp": "2026-11-14T17:35:00.000Z"
+  }
+}
+```
+
+### 3.2 Success — single resource
+
+Data is returned with both top-level direct fields and encapsulated inside `data`:
 
 ```jsonc
 // GET /api/v1/jobs/:jobId — 200 OK
@@ -88,7 +114,19 @@ Data is returned **directly** (not wrapped in a `data` envelope):
   "id": "job_abc123",
   "title": "Accessibility Specialist",
   "organization": "Acme Corp",
+  "isRemote": true,
+  "employmentType": "Full-time",
+  "descriptionSummary": "Audit digital interfaces for WCAG 2.1 compliance.",
   // ... rest of JobPosting fields
+  "success": true,
+  "data": {
+    "id": "job_abc123",
+    "title": "Accessibility Specialist"
+    // ...
+  },
+  "meta": {
+    "timestamp": "2026-11-14T17:35:00.000Z"
+  }
 }
 ```
 
