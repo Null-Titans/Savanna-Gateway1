@@ -125,6 +125,37 @@ export function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor 
   return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
+export function isBrowserSpeechRecognitionSupported(): boolean {
+  return Boolean(getSpeechRecognitionConstructor());
+}
+
+export type MicrophonePermissionState = 'prompt' | 'granted' | 'denied' | 'unknown';
+
+export async function queryMicrophonePermission(): Promise<{
+  state: MicrophonePermissionState;
+  statusObj: PermissionStatus | null;
+}> {
+  if (
+    typeof navigator === 'undefined' ||
+    !navigator.permissions ||
+    typeof navigator.permissions.query !== 'function'
+  ) {
+    return { state: 'unknown', statusObj: null };
+  }
+  try {
+    const statusObj = await navigator.permissions.query({
+      name: 'microphone' as PermissionName,
+    });
+    const state: MicrophonePermissionState =
+      statusObj.state === 'granted' || statusObj.state === 'denied' || statusObj.state === 'prompt'
+        ? statusObj.state
+        : 'unknown';
+    return { state, statusObj };
+  } catch {
+    return { state: 'unknown', statusObj: null };
+  }
+}
+
 export function isMediaRecorderSupported(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -423,8 +454,10 @@ export async function transcribeAudioOnServer(
   });
 
   if (!response.ok) {
-    const err = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(err.error || 'Could not transcribe speech.');
+    const err = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
+    const error = new Error(err.error || 'Could not transcribe speech.') as Error & { code?: string };
+    error.code = err.code;
+    throw error;
   }
 
   const data = (await response.json()) as {

@@ -13,6 +13,24 @@ import { DemoBanner } from '../components/layout/DemoBanner';
 import { MainGateway } from '../components/layout/MainGateway';
 import { OnboardingWizard } from '../components/onboarding/OnboardingWizard';
 
+export type ColorMode = 'light' | 'dark';
+
+const COLOR_MODE_STORAGE_KEY = 'gw_color_scheme';
+
+function getInitialColorMode(): ColorMode {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const saved = window.localStorage.getItem(COLOR_MODE_STORAGE_KEY);
+      if (saved === 'dark' || saved === 'light') {
+        return saved;
+      }
+    }
+  } catch {
+    // Ignore storage access restrictions
+  }
+  return 'light';
+}
+
 // Lazy-load secondary modules so initial onboarding load stays strictly < 150 KB gzipped (Addendum C1)
 const ThemeSwitcherDrawer = lazy(() =>
   import('../components/layout/ThemeSwitcherDrawer').then((m) => ({
@@ -60,6 +78,7 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
   const [activeModule, setActiveModule] = useState<GatewayModule>(initialModule);
   const [partnerAssisted, setPartnerAssisted] = useState(false);
   const [rawTheme, setRawTheme] = useState<ThemeConfig>(initialTheme);
+  const [colorMode, setColorMode] = useState<ColorMode>(getInitialColorMode);
   const [themeDrawerOpen, setThemeDrawerOpen] = useState(false);
   const [voiceAssistantOpen, setVoiceAssistantOpen] = useState(false);
   const [apiMode, setApiMode] = useState<ApiMode>(gatewayApi.getMode());
@@ -77,7 +96,40 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
     setRawTheme(initialTheme);
   }, [initialTheme]);
 
+  // Synchronize .dark class on <html>, Shadow DOM host, and localStorage
+  useEffect(() => {
+    const isDark = colorMode === 'dark';
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', isDark);
+    }
+    if (hostElement) {
+      hostElement.classList.toggle('dark', isDark);
+    }
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(COLOR_MODE_STORAGE_KEY, colorMode);
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+  }, [colorMode, hostElement]);
+
+  // Lock background page scroll whenever a side panel drawer is open
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (!themeDrawerOpen && !voiceAssistantOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [themeDrawerOpen, voiceAssistantOpen]);
+
   const validatedTheme = useMemo(() => validateTheme(rawTheme), [rawTheme]);
+
+  const handleToggleColorMode = () => {
+    setColorMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const handleNavigate = (mod: GatewayModule, opts?: { partnerAssisted?: boolean }) => {
     if (opts && typeof opts.partnerAssisted === 'boolean') {
@@ -115,7 +167,9 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
     <div
       dir={metadata.dir}
       style={themeCssVars}
-      className="min-h-screen flex flex-col bg-[var(--gw-bg-canvas)] text-[var(--gw-text-primary)] font-[var(--gw-font-sans)]"
+      className={`${
+        colorMode === 'dark' ? 'dark' : ''
+      } min-h-screen flex flex-col bg-[var(--gw-bg-canvas)] text-[var(--gw-text-primary)] font-[var(--gw-font-sans)] transition-colors`}
     >
       <SkipLink targetId="gw-main-content" />
 
@@ -128,6 +182,8 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
 
       <DemoBanner
         apiMode={apiMode}
+        colorMode={colorMode}
+        onToggleColorMode={handleToggleColorMode}
         onOpenThemeDrawer={() => setThemeDrawerOpen(true)}
         onOpenVoiceAssistant={() => setVoiceAssistantOpen(true)}
       />
@@ -151,7 +207,10 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
 
         <Suspense
           fallback={
-            <div role="status" className="rounded-xl border border-slate-300 bg-white p-6 text-base font-medium text-slate-800">
+            <div
+              role="status"
+              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-base font-medium text-[#0F1E36] dark:text-slate-100 shadow-sm"
+            >
               {t.common.loadingStatus}
             </div>
           }
@@ -175,10 +234,14 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
         </Suspense>
       </main>
 
-      <footer className="border-t border-slate-300 bg-white py-5 text-xs sm:text-sm text-slate-600">
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-[#F3F4F6] dark:bg-slate-900 py-6 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
         <div className="gw-container flex flex-wrap items-center justify-between gap-3">
-          <span>{validatedTheme.organizationName} · Accessible Onboarding &amp; Career Gateway</span>
-          <span>WCAG 2.2 AA First · Privacy-First · Platform-Independent</span>
+          <span className="font-medium text-[#0F1E36] dark:text-white">
+            {validatedTheme.organizationName} · Accessible Onboarding &amp; Career Gateway
+          </span>
+          <span className="text-slate-600 dark:text-slate-400">
+            WCAG 2.2 AA First · Privacy-First · Platform-Independent
+          </span>
         </div>
       </footer>
 
@@ -190,6 +253,8 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
             rawTheme={rawTheme}
             validatedTheme={validatedTheme}
             onUpdateTheme={setRawTheme}
+            colorMode={colorMode}
+            onToggleColorMode={handleToggleColorMode}
             apiMode={apiMode}
             apiBaseUrl={apiBaseUrl}
             onChangeApiMode={handleChangeApiMode}

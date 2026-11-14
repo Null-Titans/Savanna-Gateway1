@@ -4,6 +4,7 @@ import {
   Globe,
   Loader2,
   Mic,
+  RotateCcw,
   Send,
   Square,
   Trash2,
@@ -77,6 +78,10 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
     detectedLanguage: micDetectedLang,
     errorDetail: micErrorDetail,
     recognitionAvailable,
+    browserSttAvailable,
+    languageNotSupportedInBrowser,
+    canFallbackToBrowserEnglish,
+    micPermission,
     startListening,
     stopListening,
     discardTranscript,
@@ -214,20 +219,30 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="gw-voice-assistant-title"
-      className="fixed inset-0 z-50 flex justify-end bg-slate-900/50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      className="fixed inset-0 z-50 flex justify-end bg-[#0F1E36]/60 dark:bg-black/70 backdrop-blur-[2px]"
     >
-      <div className="w-full max-w-lg bg-white h-full overflow-y-auto shadow-2xl border-l border-slate-300 flex flex-col">
-        <div className="p-5 border-b border-slate-300 flex items-start justify-between gap-4 bg-slate-50">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 text-[#0F1E36] dark:text-slate-100 h-screen overflow-y-auto overscroll-contain shadow-2xl border-s border-slate-200 dark:border-slate-800 flex flex-col">
+        <div
+          className="p-5 sm:p-6 flex items-start justify-between gap-4 bg-[#0F1E36] text-white shrink-0 border-b border-white/10 dark:border-slate-800"
+          style={{ backgroundColor: 'var(--gw-primary)', color: 'var(--gw-primary-text)' }}
+        >
           <div className="space-y-1">
             <h2
               id="gw-voice-assistant-title"
-              className="text-lg font-bold text-slate-900 flex items-center gap-2"
+              className="text-lg font-bold text-white flex items-center gap-2 tracking-tight"
             >
-              <Mic className="w-5 h-5 shrink-0" aria-hidden="true" />
+              <span className="w-7 h-7 rounded-full bg-amber-500 text-[#0F1E36] flex items-center justify-center shrink-0">
+                <Mic className="w-4 h-4" aria-hidden="true" />
+              </span>
               <span>{t.voiceAssistant.title}</span>
             </h2>
-            <p className="text-xs sm:text-sm text-slate-700">{t.voiceAssistant.subtitle}</p>
-            <p className="text-xs font-medium text-slate-700">
+            <p className="text-xs sm:text-sm text-slate-200">{t.voiceAssistant.subtitle}</p>
+            <p className="text-xs font-semibold text-amber-400">
               {usingNeuralVoice
                 ? t.voiceAssistant.providerBadgeNeural
                 : t.voiceAssistant.providerBadgeBrowser}
@@ -238,20 +253,20 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
             type="button"
             onClick={onClose}
             aria-label={t.voiceAssistant.closeButton}
-            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg border border-slate-400 bg-white text-slate-900 hover:bg-slate-100"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-md border border-white/25 bg-[#162947] text-white hover:bg-white/15 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Strictly 3-Language Selector & Auto-Detect Control */}
-        <div className="p-4 border-b border-slate-200 bg-white space-y-3">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 shrink-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-slate-700" aria-hidden="true" />
+              <Globe className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" aria-hidden="true" />
               <label
                 htmlFor="gw-va-lang-select"
-                className="text-sm font-semibold text-slate-900"
+                className="text-sm font-semibold text-[#0F1E36] dark:text-slate-100"
               >
                 {t.common.languageLabel}:
               </label>
@@ -263,7 +278,7 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
                   setLanguageNotice(null);
                   void setLanguage(next);
                 }}
-                className="min-h-[40px] rounded-lg border border-slate-400 bg-white px-2.5 py-1 text-sm font-medium text-slate-900"
+                className="min-h-[40px] rounded-xl border border-slate-300 dark:border-slate-700 bg-[#F3F4F6]/60 dark:bg-slate-800 px-3 py-1 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 focus:bg-white dark:focus:bg-slate-900 focus:border-[#0F1E36] dark:focus:border-amber-400"
               >
                 {LANGUAGE_REGISTRY.map((lang) => (
                   <option key={lang.code} value={lang.code}>
@@ -282,7 +297,7 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
                   setAssistantError(null);
                   setLanguageNotice(null);
                 }}
-                className="inline-flex items-center gap-1.5 min-h-[40px] px-3 py-1 rounded-lg border border-slate-300 bg-white text-xs font-medium text-slate-700 hover:bg-slate-100"
+                className="inline-flex items-center gap-1.5 min-h-[40px] px-3 py-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{t.voiceAssistant.clearChat}</span>
@@ -290,12 +305,12 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
             )}
           </div>
 
-          <label className="inline-flex items-center gap-2.5 cursor-pointer text-sm text-slate-800">
+          <label className="inline-flex items-center gap-2.5 cursor-pointer text-sm font-medium text-[#0F1E36] dark:text-slate-200">
             <input
               type="checkbox"
               checked={autoDetect}
               onChange={(e) => setAutoDetect(e.target.checked)}
-              className="h-5 w-5 rounded border-slate-400"
+              className="h-5 w-5 rounded border-slate-400 dark:border-slate-600 accent-[#0F1E36] dark:accent-amber-500"
             />
             <span>{t.voiceAssistant.autoDetectLabel}</span>
           </label>
@@ -303,20 +318,20 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
           {languageNotice && (
             <p
               role="status"
-              className="text-xs font-medium text-slate-900 bg-slate-100 border border-slate-300 rounded-md px-3 py-1.5"
+              className="text-xs font-medium text-[#0F1E36] dark:text-amber-100 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 rounded-xl px-3 py-2"
             >
               {languageNotice}
             </p>
           )}
         </div>
 
-        {/* Conversation Transcript */}
+        {/* Conversation Transcript (independently scroll-contained) */}
         <div
-          className="flex-1 p-4 space-y-3 overflow-y-auto bg-slate-50"
+          className="flex-1 min-h-0 p-4 space-y-3 overflow-y-auto overscroll-contain bg-[#F3F4F6] dark:bg-slate-950"
           aria-live="polite"
         >
           {messages.length === 0 ? (
-            <div className="rounded-xl border border-slate-300 bg-white p-4 text-sm text-slate-700">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               {t.voiceAssistant.emptyState}
             </div>
           ) : (
@@ -326,13 +341,13 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
                 <div
                   key={msg.id}
                   lang={msg.language}
-                  className={`rounded-xl border p-3.5 space-y-2 ${
+                  className={`rounded-2xl border p-4 space-y-2 shadow-xs ${
                     msg.role === 'user'
-                      ? 'bg-white border-slate-300 ml-6'
-                      : 'bg-slate-100 border-slate-400 mr-4'
+                      ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 ml-6'
+                      : 'bg-[#0F1E36]/[0.04] dark:bg-slate-800/90 border-[#0F1E36]/20 dark:border-slate-700 mr-4'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 text-xs text-slate-600 font-semibold">
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider">
                     <span>
                       {msg.role === 'user' ? 'You' : t.voiceAssistant.title} ·{' '}
                       {langMeta ? langMeta.nativeName : msg.language.toUpperCase()}
@@ -341,7 +356,7 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => void read(msg.text, msg.language)}
-                        className="inline-flex items-center gap-1 min-h-[36px] px-2.5 py-1 rounded-md border border-slate-400 bg-white text-xs font-medium text-slate-900 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1 min-h-[36px] px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 normal-case tracking-normal transition-colors cursor-pointer"
                       >
                         {isSpeaking ? (
                           <>
@@ -357,7 +372,7 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
                       </button>
                     )}
                   </div>
-                  <p className="text-sm sm:text-base text-slate-900 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-sm sm:text-base text-[#0F1E36] dark:text-slate-100 leading-relaxed whitespace-pre-wrap">
                     {msg.text}
                   </p>
                 </div>
@@ -368,9 +383,9 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
           {isSending && (
             <div
               role="status"
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-800"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 shadow-xs text-sm font-medium text-[#0F1E36] dark:text-slate-100"
             >
-              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+              <Loader2 className="w-4 h-4 animate-spin text-amber-700 dark:text-amber-400" aria-hidden="true" />
               <span>{t.voiceAssistant.thinkingStatus}</span>
             </div>
           )}
@@ -378,13 +393,13 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
           {(isLoadingAudio || isSpeaking) && (
             <div
               role="status"
-              className="flex items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
+              className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 shadow-xs text-sm text-[#0F1E36] dark:text-slate-100"
             >
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center gap-2 font-medium">
                 {isLoadingAudio ? (
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-700 dark:text-amber-400" aria-hidden="true" />
                 ) : (
-                  <Volume2 className="w-4 h-4" aria-hidden="true" />
+                  <Volume2 className="w-4 h-4 text-amber-700 dark:text-amber-400" aria-hidden="true" />
                 )}
                 <span>
                   {isLoadingAudio ? t.common.loadingAudio : t.voiceAssistant.speakingStatus}
@@ -393,7 +408,7 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
               <button
                 type="button"
                 onClick={stopAudio}
-                className="inline-flex items-center gap-1 min-h-[36px] px-2.5 py-1 rounded-md border border-slate-400 bg-slate-50 text-xs font-semibold text-slate-900"
+                className="inline-flex items-center gap-1 min-h-[36px] px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-600 bg-[#F3F4F6] dark:bg-slate-800 text-xs font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-slate-200/70 dark:hover:bg-slate-700 cursor-pointer"
               >
                 <Square className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>{t.voiceAssistant.stopSpeakingButton}</span>
@@ -404,7 +419,7 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
           {voiceStatusNote && (
             <p
               role="status"
-              className="text-xs text-amber-950 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2"
+              className="text-xs text-[#0F1E36] dark:text-amber-100 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 rounded-xl px-3.5 py-2.5"
             >
               {voiceStatusNote}
             </p>
@@ -413,19 +428,59 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
           {!hasAuthenticVoice && messages.some((m) => m.role === 'assistant') && !voiceStatusNote && (
             <p
               role="note"
-              className="text-xs text-slate-700 bg-white border border-slate-300 rounded-lg px-3 py-2"
+              className="text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5"
             >
               {t.voiceAssistant.providerUnavailable}
             </p>
           )}
 
-          {(assistantError || micErrorDetail) && (
+          {(micStatus === 'permission_denied' || micPermission === 'denied') && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900"
+              className="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/50 px-3.5 py-3 text-xs sm:text-sm text-[#0F1E36] dark:text-amber-100 space-y-2"
             >
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
-              <span>{assistantError || micErrorDetail}</span>
+              <p className="font-medium">{t.voice.permissionDeniedMessage}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  handledVoiceTranscriptRef.current = null;
+                  stopAudio();
+                  startListening();
+                }}
+                className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-md border border-amber-400 dark:border-amber-600 bg-white dark:bg-slate-900 text-xs font-semibold text-[#0F1E36] dark:text-amber-100 hover:bg-amber-100/60 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>{t.voice.retryMic}</span>
+              </button>
+            </div>
+          )}
+
+          {(assistantError || (micErrorDetail && micStatus !== 'permission_denied')) && (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/50 px-3.5 py-2.5 text-sm text-red-900 dark:text-red-100"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>{assistantError || micErrorDetail}</span>
+              </div>
+              {(languageNotSupportedInBrowser || canFallbackToBrowserEnglish) &&
+                browserSttAvailable && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handledVoiceTranscriptRef.current = null;
+                        stopAudio();
+                        startListening('en');
+                      }}
+                      className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                    >
+                      <Mic className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+                      <span>{t.voice.fallbackEnglishButton}</span>
+                    </button>
+                  </div>
+                )}
             </div>
           )}
         </div>
@@ -436,9 +491,12 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
             e.preventDefault();
             void sendMessage(inputText);
           }}
-          className="p-4 border-t border-slate-300 bg-white space-y-3"
+          className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3 shrink-0"
         >
-          <label htmlFor="gw-va-input" className="block text-sm font-semibold text-slate-900">
+          <label
+            htmlFor="gw-va-input"
+            className="block text-sm font-semibold text-[#0F1E36] dark:text-white"
+          >
             {t.voiceAssistant.speakOrTypePrompt}
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -448,10 +506,10 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={t.voiceAssistant.inputPlaceholder}
-              className="flex-1 min-h-[44px] rounded-lg border border-slate-400 bg-white px-3.5 py-2 text-base text-slate-900"
+              className="flex-1 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-700 bg-[#F3F4F6]/60 dark:bg-slate-800 px-3.5 py-2 text-base text-[#0F1E36] dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:border-[#0F1E36] dark:focus:border-amber-400"
             />
             <div className="flex items-center gap-2">
-              {recognitionAvailable && (
+              {(recognitionAvailable || browserSttAvailable) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -460,29 +518,29 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
                       stopListening();
                     } else {
                       stopAudio();
-                      startListening();
+                      startListening(recognitionAvailable ? undefined : 'en');
                     }
                   }}
                   disabled={micStatus === 'transcribing' || isSending}
-                  className={`inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                  className={`inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-md text-sm font-semibold border transition-colors cursor-pointer ${
                     micStatus === 'listening'
-                      ? 'border-2 border-red-700 bg-red-50 text-red-950'
-                      : 'border-slate-400 bg-white text-slate-900 hover:bg-slate-50'
+                      ? 'border-2 border-red-700 dark:border-red-500 bg-red-50 dark:bg-red-950/60 text-red-950 dark:text-red-100'
+                      : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#0F1E36] dark:text-slate-100 hover:bg-amber-50 dark:hover:bg-slate-700 hover:border-amber-400 dark:hover:border-amber-400'
                   }`}
                 >
                   {micStatus === 'transcribing' ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-700 dark:text-amber-400" aria-hidden="true" />
                       <span>{t.voice.transcribingState}</span>
                     </>
                   ) : micStatus === 'listening' ? (
                     <>
-                      <Square className="w-4 h-4 text-red-800" aria-hidden="true" />
+                      <Square className="w-4 h-4 text-red-800 dark:text-red-400" aria-hidden="true" />
                       <span>{t.voice.stopMic}</span>
                     </>
                   ) : (
                     <>
-                      <Mic className="w-4 h-4" aria-hidden="true" />
+                      <Mic className="w-4 h-4 text-amber-700 dark:text-amber-400" aria-hidden="true" />
                       <span>{t.voiceAssistant.speakButton}</span>
                     </>
                   )}
@@ -492,18 +550,19 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
               <button
                 type="submit"
                 disabled={!inputText.trim() || isSending}
-                className="inline-flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-                style={{
-                  backgroundColor: 'var(--gw-primary)',
-                  color: 'var(--gw-primary-text)',
-                }}
+                className="inline-flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-md text-sm font-bold bg-amber-500 hover:bg-amber-400 text-[#0F1E36] transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
               >
                 <Send className="w-4 h-4" aria-hidden="true" />
                 <span>{t.voiceAssistant.sendButton}</span>
               </button>
             </div>
           </div>
-          <p className="text-xs text-slate-600">{t.voice.noAudioStoredNote}</p>
+          {micPermission === 'prompt' && recognitionAvailable && (
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              {t.voice.permissionPromptNote}
+            </p>
+          )}
+          <p className="text-xs text-slate-600 dark:text-slate-400">{t.voice.noAudioStoredNote}</p>
         </form>
       </div>
     </div>

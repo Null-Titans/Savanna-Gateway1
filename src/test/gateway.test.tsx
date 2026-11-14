@@ -164,4 +164,63 @@ describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
     expect(screen.getByText(/Please remove medical or diagnosis language before publishing/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Publish accessible job listing/i })).toBeDisabled();
   });
+
+  it('toggles dark mode cleanly, updates document root & aria-pressed, and passes axe-core in dark mode', async () => {
+    localStorage.removeItem('gw_color_scheme');
+    document.documentElement.classList.remove('dark');
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    const darkBtn = screen.getByRole('button', { name: /Dark mode/i });
+    expect(darkBtn).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(darkBtn);
+    await waitFor(() => {
+      expect(document.documentElement.classList.contains('dark')).toBe(true);
+    });
+    expect(localStorage.getItem('gw_color_scheme')).toBe('dark');
+
+    const lightBtn = screen.getByRole('button', { name: /Light mode/i });
+    expect(lightBtn).toHaveAttribute('aria-pressed', 'true');
+
+    const darkAxe = await axe.run(container);
+    expect(darkAxe.violations).toEqual([]);
+
+    await user.click(lightBtn);
+    await waitFor(() => {
+      expect(document.documentElement.classList.contains('dark')).toBe(false);
+    });
+  });
+
+  it('contains scroll inside ThemeSwitcherDrawer, locks background body scroll, and closes on Escape or backdrop click', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(document.body.style.overflow).toBe('');
+    await user.click(screen.getByRole('button', { name: /Theme & API/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    const drawerPanel = dialog.firstElementChild as HTMLElement;
+    expect(drawerPanel.className).toContain('h-screen');
+    expect(drawerPanel.className).toContain('overflow-y-auto');
+    expect(drawerPanel.className).toContain('overscroll-contain');
+    expect(document.body.style.overflow).toBe('hidden');
+
+    // Escape closes drawer and restores body scroll
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(document.body.style.overflow).toBe('');
+
+    // Re-open and test backdrop click close
+    await user.click(screen.getByRole('button', { name: /Theme & API/i }));
+    const reopenedDialog = await screen.findByRole('dialog');
+    await user.click(reopenedDialog);
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(document.body.style.overflow).toBe('');
+  });
 });
+

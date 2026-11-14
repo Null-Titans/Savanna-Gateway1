@@ -36,6 +36,8 @@ export const om: TranslationDictionary = {
     stepOf: 'Tarkaanfii {current} / {total}',
     noTimeoutNotice: 'Daangaan yeroo hin jiru. Deebiin keessan hanga xumurtanitti asitti tura.',
     errorSummaryTitle: 'Itti fufuun dura waan tokko mirkaneessaa',
+    darkModeLabel: 'Haala Dukkanaa',
+    lightModeLabel: 'Haala Ifaa',
   },
   nav: {
     gateway: 'Fuula Duraa',
@@ -85,6 +87,10 @@ export const om: TranslationDictionary = {
     readToAssistantOption: 'Gargaaraa michuu amanamaa kootiif sagaleedhaan dubbisee hima',
     readToAssistantReminder: 'Yaadachiisa: Yoo ol kaastanii dubbistan namoonni naannoo jiran dhagahuu danda\'u.',
     detectedLanguageLabel: 'Afaan adda baafame',
+    permissionPromptNote: 'Yeroo biraawuzarri hayyama maayikiroofoonii gaafatu "Allow" filadhaa. Sagaleen hin kuufamu.',
+    retryMic: 'Maayikiroofoonii irra deebi\'ii yaali',
+    emptySpeechError: 'Sagaleen hin dhagamne. Irra deebi\'uuf maayikiroofoonii bani tuqaa ykn barreessaa.',
+    fallbackEnglishButton: 'Ingiliffaan dubbadhu',
   },
   voiceAssistant: {
     title: 'Gargaaraa Sagalee Afaanota Sadii',

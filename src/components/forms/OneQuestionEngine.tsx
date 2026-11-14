@@ -97,21 +97,23 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Progress & Reassurance Header */}
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-medium text-slate-700">
-          <span>{flowTitle}</span>
-          <span className="tabular-nums font-semibold text-slate-900">
+      {/* Deep Navy Progress & Reassurance Header Card */}
+      <div
+        className="rounded-2xl bg-[#0F1E36] dark:border dark:border-slate-800 text-white p-5 sm:p-6 shadow-md space-y-3"
+        style={{ backgroundColor: 'var(--gw-primary)', color: 'var(--gw-primary-text)' }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-amber-400">
+            {flowTitle}
+          </span>
+          <span className="tabular-nums text-xs sm:text-sm font-bold bg-[#162947] border border-white/15 text-white rounded-full px-3 py-1">
             {format(t.common.stepOf, { current: displayStepNumber, total: totalSteps })}
           </span>
         </div>
-        <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden" aria-hidden="true">
+        <div className="w-full h-2.5 bg-[#162947] border border-white/10 rounded-full overflow-hidden" aria-hidden="true">
           <div
-            className="h-full transition-all duration-200"
-            style={{
-              width: `${progressPercent}%`,
-              backgroundColor: 'var(--gw-secondary)',
-            }}
+            className="h-full transition-all duration-200 rounded-full bg-amber-500"
+            style={{ width: `${progressPercent}%` }}
           />
         </div>
         <progress
@@ -120,28 +122,28 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
           max={totalSteps}
           aria-label={format(t.common.stepOf, { current: displayStepNumber, total: totalSteps })}
         />
-        <p className="text-xs text-slate-600">{t.common.noTimeoutNotice}</p>
+        <p className="text-xs text-slate-200">{t.common.noTimeoutNotice}</p>
       </div>
 
       {/* Single-Question Card */}
-      <div className="rounded-2xl border border-slate-300 bg-white p-5 sm:p-8 shadow-xs space-y-6">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-6">
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h2
               ref={headingRef}
               tabIndex={-1}
-              className="text-xl sm:text-2xl font-bold text-slate-900 focus:outline-none"
+              className="text-xl sm:text-2xl font-bold text-[#0F1E36] dark:text-white tracking-tight focus:outline-none"
             >
               {isReviewStep ? t.onboarding.reviewTitle : activeStep?.title}
             </h2>
             {!isReviewStep && activeStep?.optional && (
-              <span className="text-xs font-medium text-slate-700 bg-slate-100 border border-slate-300 rounded-md px-2.5 py-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F1E36] dark:text-amber-200 bg-amber-100 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 rounded-full px-3 py-1">
                 {t.common.optionalBadge}
               </span>
             )}
           </div>
 
-          <p className="text-base text-slate-700 gw-prose-measure">
+          <p className="text-base text-slate-700 dark:text-slate-300 gw-prose-measure leading-relaxed">
             {isReviewStep ? t.onboarding.reviewHelp : activeStep?.helpText}
           </p>
 
@@ -155,10 +157,15 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
 
         {/* Data Minimisation: Why do we ask this? (Addendum D2) */}
         {!isReviewStep && activeStep && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 flex items-start gap-2.5">
-            <HelpCircle className="w-4 h-4 shrink-0 mt-0.5 text-slate-600" aria-hidden="true" />
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F3F4F6] dark:bg-slate-800/70 px-4 py-3.5 text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2.5">
+            <HelpCircle
+              className="w-4 h-4 shrink-0 mt-0.5 text-[#1E3A5F] dark:text-amber-400"
+              aria-hidden="true"
+            />
             <div>
-              <span className="font-semibold text-slate-900">{t.common.whyWeAskLabel} </span>
+              <span className="font-semibold text-[#0F1E36] dark:text-white">
+                {t.common.whyWeAskLabel}{' '}
+              </span>
               <span>{activeStep.whyWeAsk}</span>
             </div>
           </div>
@@ -166,13 +173,16 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
 
         {/* Network / Submission Error with Retry & No Lost Answers (Addendum C3) */}
         {submitError && (
-          <div role="alert" className="rounded-xl border-2 border-red-700 bg-red-50 p-4 space-y-3 text-red-950">
+          <div
+            role="alert"
+            className="rounded-xl border-2 border-red-700 dark:border-red-500 bg-red-50 dark:bg-red-950/60 p-4 space-y-3 text-red-950 dark:text-red-100"
+          >
             <p className="text-sm font-semibold">{submitError}</p>
             {onRetrySubmit && (
               <button
                 type="button"
                 onClick={onRetrySubmit}
-                className="min-h-[44px] px-4 py-2 rounded-lg bg-red-800 text-white text-sm font-semibold hover:bg-red-900"
+                className="min-h-[44px] px-4 py-2 rounded-md bg-red-800 text-white text-sm font-semibold hover:bg-red-900 cursor-pointer"
               >
                 {t.common.retry}
               </button>
@@ -181,13 +191,13 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
         )}
 
         {/* Navigation Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-3">
             {(currentStepIndex > 0 || isReviewStep) && (
               <button
                 type="button"
                 onClick={handleBack}
-                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-lg border border-slate-400 bg-white text-slate-900 text-sm font-semibold hover:bg-slate-50"
+                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#0F1E36] dark:text-slate-100 text-sm font-semibold hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                 <span>{t.common.back}</span>
@@ -198,7 +208,7 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
               <button
                 type="button"
                 onClick={handleSkip}
-                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 text-sm font-medium hover:bg-slate-100"
+                className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-md border border-slate-300 dark:border-slate-700 bg-[#F3F4F6] dark:bg-slate-800 text-[#0F1E36] dark:text-slate-200 text-sm font-medium hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <SkipForward className="w-4 h-4" aria-hidden="true" />
                 <span>{t.common.skip}</span>
@@ -210,11 +220,7 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-2.5 rounded-lg text-base font-semibold transition-colors"
-              style={{
-                backgroundColor: 'var(--gw-primary)',
-                color: 'var(--gw-primary-text)',
-              }}
+              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-2.5 rounded-md text-base font-bold bg-amber-500 hover:bg-amber-400 text-[#0F1E36] transition-colors shadow-sm cursor-pointer"
             >
               <span>
                 {currentStepIndex === steps.length - 1 ? t.common.reviewAnswers : t.common.continue}
@@ -226,11 +232,7 @@ export const OneQuestionEngine: React.FC<OneQuestionEngineProps> = ({
               type="button"
               disabled={isSubmitting}
               onClick={onSubmitFinal}
-              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-2.5 rounded-lg text-base font-semibold transition-colors disabled:opacity-60"
-              style={{
-                backgroundColor: 'var(--gw-secondary)',
-                color: 'var(--gw-secondary-text)',
-              }}
+              className="inline-flex items-center gap-2 min-h-[48px] px-6 py-2.5 rounded-md text-base font-bold bg-amber-500 hover:bg-amber-400 text-[#0F1E36] transition-colors shadow-sm disabled:opacity-60 cursor-pointer"
             >
               <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
               <span>{isSubmitting ? t.common.loadingStatus : submitLabel || t.common.submit}</span>

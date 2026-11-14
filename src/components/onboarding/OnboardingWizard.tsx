@@ -169,7 +169,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         renderContent: () => (
           <div className="space-y-6">
             <fieldset className="space-y-3">
-              <legend className="text-base font-semibold text-slate-900">
+              <legend className="text-base font-semibold text-[#0F1E36] dark:text-white">
                 {t.saveResume.sharedPhoneQuestion}
               </legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -177,10 +177,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   type="button"
                   aria-pressed={draft.isSharedDevice === false}
                   onClick={() => updateDraft({ isSharedDevice: false })}
-                  className={`min-h-[56px] p-4 rounded-xl border-2 text-start font-medium transition-colors ${
+                  className={`min-h-[56px] p-4 rounded-xl border-2 text-start font-medium transition-colors cursor-pointer ${
                     draft.isSharedDevice === false
-                      ? 'border-slate-900 bg-slate-100 text-slate-950 font-semibold'
-                      : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                      ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15 text-[#0F1E36] dark:text-amber-100 font-semibold ring-1 ring-[#0F1E36] dark:ring-amber-400'
+                      : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   {t.saveResume.sharedPhoneNo}
@@ -192,10 +192,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     updateDraft({ isSharedDevice: true });
                     void handleDeleteDeviceDraft();
                   }}
-                  className={`min-h-[56px] p-4 rounded-xl border-2 text-start font-medium transition-colors ${
+                  className={`min-h-[56px] p-4 rounded-xl border-2 text-start font-medium transition-colors cursor-pointer ${
                     draft.isSharedDevice === true
-                      ? 'border-slate-900 bg-slate-100 text-slate-950 font-semibold'
-                      : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                      ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15 text-[#0F1E36] dark:text-amber-100 font-semibold ring-1 ring-[#0F1E36] dark:ring-amber-400'
+                      : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   {t.saveResume.sharedPhoneYes}
@@ -203,8 +203,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               </div>
             </fieldset>
 
-            <fieldset className="space-y-3 pt-2 border-t border-slate-200">
-              <legend className="text-base font-semibold text-slate-900">
+            <fieldset className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <legend className="text-base font-semibold text-[#0F1E36] dark:text-white">
                 Who is filling out this form?
               </legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -212,10 +212,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   type="button"
                   aria-pressed={draft.registrationMode === 'self'}
                   onClick={() => updateDraft({ registrationMode: 'self' })}
-                  className={`flex items-center gap-3 min-h-[56px] p-4 rounded-xl border-2 text-start transition-colors ${
+                  className={`flex items-center gap-3 min-h-[56px] p-4 rounded-xl border-2 text-start transition-colors cursor-pointer ${
                     draft.registrationMode === 'self'
-                      ? 'border-slate-900 bg-slate-100 text-slate-950 font-semibold'
-                      : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                      ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15 text-[#0F1E36] dark:text-amber-100 font-semibold ring-1 ring-[#0F1E36] dark:ring-amber-400'
+                      : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <UserCheck className="w-5 h-5 shrink-0" aria-hidden="true" />
@@ -225,10 +225,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   type="button"
                   aria-pressed={draft.registrationMode === 'partner_assisted'}
                   onClick={() => updateDraft({ registrationMode: 'partner_assisted' })}
-                  className={`flex items-center gap-3 min-h-[56px] p-4 rounded-xl border-2 text-start transition-colors ${
+                  className={`flex items-center gap-3 min-h-[56px] p-4 rounded-xl border-2 text-start transition-colors cursor-pointer ${
                     draft.registrationMode === 'partner_assisted'
-                      ? 'border-slate-900 bg-slate-100 text-slate-950 font-semibold'
-                      : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                      ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15 text-[#0F1E36] dark:text-amber-100 font-semibold ring-1 ring-[#0F1E36] dark:ring-amber-400'
+                      : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Users className="w-5 h-5 shrink-0" aria-hidden="true" />
@@ -279,17 +279,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         renderContent: () => (
           <div className="space-y-5">
             <fieldset className="space-y-2.5">
-              <legend className="text-base font-semibold text-slate-900">
+              <legend className="text-base font-semibold text-[#0F1E36] dark:text-white">
                 {t.onboarding.stepContactMethodLabel}
               </legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {(['phone', 'email', 'partner_contact', 'none'] as const).map((method) => (
                   <label
                     key={method}
-                    className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer ${
+                    className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
                       draft.contactMethod === method
-                        ? 'border-slate-900 bg-slate-100 font-semibold text-slate-950'
-                        : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                        ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15 font-semibold text-[#0F1E36] dark:text-amber-100'
+                        : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     <input
@@ -297,7 +297,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                       name="gw-contact-method"
                       checked={draft.contactMethod === method}
                       onChange={() => updateDraft({ contactMethod: method })}
-                      className="h-5 w-5"
+                      className="h-5 w-5 accent-[#0F1E36] dark:accent-amber-500"
                     />
                     <span>{t.onboarding.contactMethods[method]}</span>
                   </label>
@@ -359,8 +359,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                       key={routeKey}
                       className={`flex items-start gap-3.5 min-h-[56px] p-4 rounded-xl border-2 cursor-pointer transition-colors ${
                         selected
-                          ? 'border-slate-900 bg-slate-100 text-slate-950'
-                          : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                          ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15 text-[#0F1E36] dark:text-amber-100'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       <input
@@ -369,11 +369,15 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                         value={routeKey}
                         checked={selected}
                         onChange={() => updateDraft({ identityRoute: routeKey })}
-                        className="mt-1 h-5 w-5 shrink-0"
+                        className="mt-1 h-5 w-5 shrink-0 accent-[#0F1E36] dark:accent-amber-500"
                       />
                       <div>
-                        <div className="text-base font-semibold text-slate-900">{info.label}</div>
-                        <div className="text-sm text-slate-700 mt-0.5">{info.desc}</div>
+                        <div className="text-base font-semibold text-[#0F1E36] dark:text-white">
+                          {info.label}
+                        </div>
+                        <div className="text-sm text-slate-700 dark:text-slate-300 mt-0.5">
+                          {info.desc}
+                        </div>
                       </div>
                     </label>
                   );
@@ -424,8 +428,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
           ];
           return (
             <div className="space-y-5">
-              <div className="flex items-start gap-2.5 rounded-lg border border-teal-800/30 bg-teal-50 p-3.5 text-sm text-teal-950">
-                <Lock className="w-4 h-4 shrink-0 mt-0.5 text-teal-800" aria-hidden="true" />
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/50 p-3.5 text-sm text-[#0F1E36] dark:text-amber-100">
+                <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-800 dark:text-amber-400" aria-hidden="true" />
                 <span>{t.onboarding.stepSupportPrivacyNotice}</span>
               </div>
 
@@ -436,17 +440,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   return (
                     <label
                       key={pref}
-                      className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer ${
+                      className={`flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
                         checked
-                          ? 'border-slate-900 bg-slate-100 font-semibold text-slate-950'
-                          : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                          ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15 font-semibold text-[#0F1E36] dark:text-amber-100'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleSupportPref(pref)}
-                        className="h-5 w-5 shrink-0 rounded"
+                        className="h-5 w-5 shrink-0 rounded accent-[#0F1E36] dark:accent-amber-500"
                       />
                       <span>{t.onboarding.supportOptions[pref]}</span>
                     </label>
@@ -493,9 +497,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         },
         renderContent: () => (
           <div className="space-y-5">
-            <div className="rounded-lg border border-slate-300 bg-slate-50 p-4 text-sm text-slate-800 space-y-2">
-              <div className="flex items-center gap-2 font-semibold text-slate-900">
-                <ShieldCheck className="w-4 h-4 text-slate-700" aria-hidden="true" />
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F3F4F6] dark:bg-slate-800/80 p-4 text-sm text-slate-800 dark:text-slate-200 space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-[#0F1E36] dark:text-white">
+                <ShieldCheck className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" aria-hidden="true" />
                 <span>Data sharing summary for consent</span>
               </div>
               <p>{t.onboarding.partnerSharedScopeText}</p>
@@ -533,7 +537,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
             <label
               htmlFor="gw-partner-consent-checkbox"
-              className="flex items-start gap-3 min-h-[56px] p-4 rounded-xl border-2 border-slate-400 bg-white cursor-pointer"
+              className="flex items-start gap-3 min-h-[56px] p-4 rounded-xl border-2 border-[#0F1E36]/30 dark:border-slate-600 bg-white dark:bg-slate-800/70 hover:border-[#0F1E36] dark:hover:border-amber-400 transition-colors cursor-pointer"
             >
               <input
                 id="gw-partner-consent-checkbox"
@@ -549,14 +553,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     },
                   })
                 }
-                className="mt-1 h-5 w-5 shrink-0"
+                className="mt-1 h-5 w-5 shrink-0 accent-[#0F1E36] dark:accent-amber-500"
               />
-              <span className="text-base font-medium text-slate-900">
+              <span className="text-base font-medium text-[#0F1E36] dark:text-slate-100">
                 {t.onboarding.partnerConsentCheckbox}
               </span>
             </label>
             {draft.partnerConsent?.learnerConsented && draft.partnerConsent.recordedAtIso && (
-              <p className="text-xs text-emerald-900 bg-emerald-50 border border-emerald-300 rounded-md px-3 py-2">
+              <p className="text-xs text-emerald-900 dark:text-emerald-100 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 rounded-md px-3 py-2">
                 Consent timestamp recorded: {new Date(draft.partnerConsent.recordedAtIso).toLocaleString()}
               </p>
             )}
@@ -636,18 +640,22 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   if (receipt) {
     return (
       <section aria-labelledby="gw-confirm-heading" className="max-w-3xl mx-auto space-y-6">
-        <div className="rounded-2xl border-2 border-emerald-700 bg-white p-6 sm:p-8 space-y-5">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-7 h-7 text-emerald-700 shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="rounded-2xl border-2 border-emerald-700 dark:border-emerald-600 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+          <div className="flex items-start gap-3.5">
+            <span className="w-11 h-11 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
+            </span>
             <div className="space-y-1">
-              <h2 id="gw-confirm-heading" className="text-2xl font-bold text-slate-900">
+              <h2 id="gw-confirm-heading" className="text-2xl font-bold text-[#0F1E36] dark:text-white">
                 {t.onboarding.confirmationTitle}
               </h2>
-              <p className="text-sm font-mono text-slate-600">Reference: {receipt.id}</p>
+              <p className="text-sm font-mono text-slate-600 dark:text-slate-300 tabular-nums">
+                Reference: {receipt.id}
+              </p>
             </div>
           </div>
 
-          <p className="text-base text-slate-800 bg-slate-50 border border-slate-300 rounded-xl p-4">
+          <p className="text-base text-[#0F1E36] dark:text-slate-100 bg-[#F3F4F6] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
             {receipt.persistedToServer
               ? t.onboarding.confirmationRealNote
               : t.onboarding.confirmationDemoNote}
@@ -662,11 +670,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   contact: draft.contactValue,
                 })
               }
-              className="min-h-[48px] px-6 py-3 rounded-xl text-base font-semibold"
-              style={{
-                backgroundColor: 'var(--gw-primary)',
-                color: 'var(--gw-primary-text)',
-              }}
+              className="min-h-[48px] px-6 py-3 rounded-md text-base font-bold bg-amber-500 hover:bg-amber-400 text-[#0F1E36] transition-colors shadow-sm cursor-pointer"
             >
               {t.onboarding.startCareerFromConfirm}
             </button>
@@ -677,7 +681,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 setIsReview(false);
                 setStepIndex(0);
               }}
-              className="min-h-[48px] px-5 py-3 rounded-xl border border-slate-400 bg-white text-slate-900 text-base font-medium hover:bg-slate-50"
+              className="min-h-[48px] px-5 py-3 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#0F1E36] dark:text-slate-100 text-base font-semibold hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
             >
               Start another registration
             </button>
@@ -702,28 +706,32 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         onRetrySubmit={handleSubmitFinal}
         renderReviewContent={() => (
           <div className="space-y-4">
-            <dl className="divide-y divide-slate-200 border border-slate-300 rounded-xl bg-slate-50/50">
+            <dl className="divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl bg-[#F3F4F6]/60 dark:bg-slate-800/60">
               <div className="p-4 flex items-start justify-between gap-4">
                 <div>
-                  <dt className="text-xs font-semibold text-slate-600">{t.onboarding.stepNameLabel}</dt>
-                  <dd className="text-base font-medium text-slate-900 mt-0.5">
+                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    {t.onboarding.stepNameLabel}
+                  </dt>
+                  <dd className="text-base font-semibold text-[#0F1E36] dark:text-white mt-0.5">
                     {draft.fullName || 'Not provided'}
                   </dd>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleStepChange(1)}
-                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-900 hover:bg-slate-100"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
                 >
-                  <Edit3 className="w-4 h-4" aria-hidden="true" />
+                  <Edit3 className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" aria-hidden="true" />
                   <span>{t.common.edit}</span>
                 </button>
               </div>
 
               <div className="p-4 flex items-start justify-between gap-4">
                 <div>
-                  <dt className="text-xs font-semibold text-slate-600">{t.onboarding.stepContactMethodLabel}</dt>
-                  <dd className="text-base font-medium text-slate-900 mt-0.5">
+                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    {t.onboarding.stepContactMethodLabel}
+                  </dt>
+                  <dd className="text-base font-semibold text-[#0F1E36] dark:text-white mt-0.5">
                     {t.onboarding.contactMethods[draft.contactMethod]}
                     {draft.contactMethod !== 'none' && draft.contactValue ? ` · ${draft.contactValue}` : ''}
                   </dd>
@@ -731,17 +739,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <button
                   type="button"
                   onClick={() => handleStepChange(2)}
-                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-900 hover:bg-slate-100"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
                 >
-                  <Edit3 className="w-4 h-4" aria-hidden="true" />
+                  <Edit3 className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" aria-hidden="true" />
                   <span>{t.common.edit}</span>
                 </button>
               </div>
 
               <div className="p-4 flex items-start justify-between gap-4">
                 <div>
-                  <dt className="text-xs font-semibold text-slate-600">{t.onboarding.stepIdentityTitle}</dt>
-                  <dd className="text-base font-medium text-slate-900 mt-0.5">
+                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                    {t.onboarding.stepIdentityTitle}
+                  </dt>
+                  <dd className="text-base font-semibold text-[#0F1E36] dark:text-white mt-0.5">
                     {draft.identityRoute
                       ? t.onboarding.identityRoutes[draft.identityRoute].label
                       : 'Not chosen'}
@@ -751,19 +761,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <button
                   type="button"
                   onClick={() => handleStepChange(3)}
-                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-900 hover:bg-slate-100"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
                 >
-                  <Edit3 className="w-4 h-4" aria-hidden="true" />
+                  <Edit3 className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" aria-hidden="true" />
                   <span>{t.common.edit}</span>
                 </button>
               </div>
 
               <div className="p-4 flex items-start justify-between gap-4">
                 <div>
-                  <dt className="text-xs font-semibold text-slate-600">
+                  <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     {t.onboarding.stepSupportTitle} (Private)
                   </dt>
-                  <dd className="text-base font-medium text-slate-900 mt-0.5">
+                  <dd className="text-base font-semibold text-[#0F1E36] dark:text-white mt-0.5">
                     {draft.supportPreferences.length > 0
                       ? draft.supportPreferences.map((p) => t.onboarding.supportOptions[p]).join(', ')
                       : 'Skipped / none selected'}
@@ -772,9 +782,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <button
                   type="button"
                   onClick={() => handleStepChange(4)}
-                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-900 hover:bg-slate-100"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
                 >
-                  <Edit3 className="w-4 h-4" aria-hidden="true" />
+                  <Edit3 className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" aria-hidden="true" />
                   <span>{t.common.edit}</span>
                 </button>
               </div>

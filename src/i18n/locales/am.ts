@@ -36,6 +36,8 @@ export const am: TranslationDictionary = {
     stepOf: 'ደረጃ {current} ከ {total}', // needs native review
     noTimeoutNotice: 'የጊዜ ገደብ የለም። መልሶችዎ እስኪጨርሱ ድረስ አይጠፉም።', // needs native review
     errorSummaryTitle: 'ከመቀጠልዎ በፊት ይህን ያስተካክሉ', // needs native review
+    darkModeLabel: 'ጨለማ ገጽታ', // needs native review
+    lightModeLabel: 'ብሩህ ገጽታ', // needs native review
   },
   nav: {
     gateway: 'መነሻ', // needs native review
@@ -82,6 +84,10 @@ export const am: TranslationDictionary = {
     readToAssistantOption: 'ለታመነው የአጋር ረዳት በድምፅ አንብቤ ልንገር', // needs native review
     readToAssistantReminder: 'ማሳሰቢያ፡ ቁጥሩን ጮክ ብለው ሲያነቡ አጠገብዎ ያሉ ሰዎች ሊሰሙ ይችላሉ።', // needs native review
     detectedLanguageLabel: 'የተለየው ቋንቋ', // needs native review
+    permissionPromptNote: 'አሳሽዎ የማይክሮፎን ፈቃድ ሲጠይቅ "ፍቀድ" (Allow) የሚለውን ይምረጡ። ድምፅዎ በፍጹም አይቀመጥም።', // needs native review
+    retryMic: 'ማይክሮፎኑን እንደገና ሞክር', // needs native review
+    emptySpeechError: 'ምንም ድምፅ አልተሰማም። እንደገና ለመሞከር ማይክሮፎን ጀምርን ይጫኑ ወይም ይጻፉ።', // needs native review
+    fallbackEnglishButton: 'በእንግሊዝኛ ይናገሩ', // needs native review
   },
   voiceAssistant: {
     title: 'ባለብዙ ቋንቋ የድምፅ ረዳት', // needs native review

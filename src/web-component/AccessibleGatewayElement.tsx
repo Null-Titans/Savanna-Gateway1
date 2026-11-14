@@ -20,6 +20,17 @@ const OBSERVED_ATTRS = [
   'demo',
 ] as const;
 
+function ensureTailwindPropertiesRegistered(cssText: string): void {
+  if (typeof document === 'undefined' || !document.head) return;
+  if (document.querySelector('style[data-gw-tw-properties]')) return;
+  const matches = cssText.match(/@property\s+--tw-[^{]+\{[^}]*\}/g);
+  if (!matches || matches.length === 0) return;
+  const propStyle = document.createElement('style');
+  propStyle.setAttribute('data-gw-tw-properties', 'true');
+  propStyle.textContent = matches.join('\n');
+  document.head.appendChild(propStyle);
+}
+
 export class AccessibleGatewayElement extends HTMLElement {
   private shadowRootRef: ShadowRoot;
   private mountPoint: HTMLDivElement;
@@ -31,6 +42,7 @@ export class AccessibleGatewayElement extends HTMLElement {
 
   constructor() {
     super();
+    ensureTailwindPropertiesRegistered(gatewayCss);
     this.shadowRootRef = this.attachShadow({ mode: 'open' });
 
     const styleEl = document.createElement('style');

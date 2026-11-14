@@ -29,6 +29,8 @@ export const en: TranslationDictionary = {
     stepOf: 'Step {current} of {total}',
     noTimeoutNotice: 'No time limit. Your typed answers stay on this screen until you finish.',
     errorSummaryTitle: 'Please check one thing before continuing',
+    darkModeLabel: 'Dark mode',
+    lightModeLabel: 'Light mode',
   },
   nav: {
     gateway: 'Home',
@@ -78,6 +80,10 @@ export const en: TranslationDictionary = {
     readToAssistantOption: 'Read it aloud to my trusted partner assistant instead',
     readToAssistantReminder: 'Reminder: People nearby may hear your ID number if you speak it aloud.',
     detectedLanguageLabel: 'Detected language',
+    permissionPromptNote: 'When prompted by your browser, select Allow so we can hear your answer. Audio is never saved.',
+    retryMic: 'Try microphone again',
+    emptySpeechError: 'No speech was heard. Tap Start microphone to try again or type your answer.',
+    fallbackEnglishButton: 'Speak in English instead',
   },
   voiceAssistant: {
     title: 'Multilingual Voice Assistant',

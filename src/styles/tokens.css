@@ -19,28 +19,29 @@
 :root,
 :host {
   /* Typography */
-  --gw-font-sans: "GatewaySans", "GatewayEthiopic", "Noto Sans Ethiopic", "Abyssinica SIL", "Nyala", system-ui, -apple-system, sans-serif;
+  --gw-font-sans: "Plus Jakarta Sans", "GatewaySans", "GatewayEthiopic", "Noto Sans Ethiopic", "Abyssinica SIL", "Nyala", system-ui, -apple-system, sans-serif;
   --gw-font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
 
   /* Neutral Canvas & Structural Surfaces (60-30-10) */
-  --gw-bg-canvas: #f8fafc;
+  --gw-bg-canvas: #f3f4f6;
   --gw-bg-surface: #ffffff;
-  --gw-bg-subtle: #f1f5f9;
-  --gw-border: #cbd5e1;
+  --gw-bg-subtle: #f8fafc;
+  --gw-border: #e2e8f0;
   --gw-border-strong: #94a3b8;
 
   /* Text Tokens (WCAG AA/AAA verified on white & canvas) */
-  --gw-text-primary: #0f172a;
+  --gw-text-primary: #0f1e36;
   --gw-text-secondary: #334155;
   --gw-text-muted: #475569;
 
   /* Partner Brand Accent Tokens (Overridden dynamically by Theme Config + Contrast Guardrail) */
-  --gw-primary: #0a2540;
+  --gw-primary: #0f1e36;
   --gw-primary-text: #ffffff;
-  --gw-primary-hover: #13385e;
-  --gw-secondary: #0f766e;
+  --gw-primary-hover: #1e3a5f;
+  --gw-secondary: #1e3a5f;
   --gw-secondary-text: #ffffff;
-  --gw-secondary-soft: #f0fdfa;
+  --gw-secondary-soft: #eff6ff;
+  --gw-accent-amber: #f59e0b;
 
   /* Semantic Status Tokens (Always paired with icon + text, never hue-only) */
   --gw-error-bg: #fef2f2;
@@ -56,11 +57,11 @@
   --gw-warn-text: #92400e;
 
   --gw-info-bg: #eff6ff;
-  --gw-info-border: #1d4ed8;
-  --gw-info-text: #1e40af;
+  --gw-info-border: #1e3a5f;
+  --gw-info-text: #0f1e36;
 
   /* Focus Indicator (>= 2px thick, >= 3:1 contrast) */
-  --gw-focus-ring: #1d4ed8;
+  --gw-focus-ring: #d97706;
   --gw-focus-offset: 2px;
 
   /* Radii & Spacing */
@@ -69,6 +70,38 @@
   --gw-radius-lg: 14px;
   --gw-touch-min: 44px;
   --gw-header-offset: 112px;
+}
+
+.dark,
+:host(.dark) {
+  --gw-bg-canvas: #0b1120;
+  --gw-bg-surface: #0f172a;
+  --gw-bg-subtle: #1e293b;
+  --gw-border: #1e293b;
+  --gw-border-strong: #475569;
+
+  --gw-text-primary: #f8fafc;
+  --gw-text-secondary: #cbd5e1;
+  --gw-text-muted: #94a3b8;
+
+  --gw-secondary-soft: #172554;
+
+  --gw-error-bg: #450a0a;
+  --gw-error-border: #f87171;
+  --gw-error-text: #fecaca;
+
+  --gw-success-bg: #052e16;
+  --gw-success-border: #4ade80;
+  --gw-success-text: #bbf7d0;
+
+  --gw-warn-bg: #451a03;
+  --gw-warn-border: #f59e0b;
+  --gw-warn-text: #fef3c7;
+
+  --gw-info-bg: #172554;
+  --gw-info-border: #60a5fa;
+  --gw-info-text: #dbeafe;
+  --gw-focus-ring: #fbbf24;
 }
 
 /* Ensure sticky headers never obscure focused elements (WCAG 2.2 2.4.11 Focus Not Obscured) */

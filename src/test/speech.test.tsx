@@ -328,3 +328,333 @@ describe('Server Speech Router Endpoints', () => {
     }
   });
 });
+
+describe('Voice Input Repair (webkitSpeechRecognition, Empty Guard, Permissions & Fallback)', () => {
+  const originalSpeechRecognition = (window as unknown as Record<string, unknown>).SpeechRecognition;
+  const originalWebkitSpeechRecognition = (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'SpeechRecognition', {
+      value: originalSpeechRecognition,
+      configurable: true,
+    });
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      value: originalWebkitSpeechRecognition,
+      configurable: true,
+    });
+    vi.restoreAllMocks();
+  });
+
+  function installMockWebkitRecognition(
+    behavior: (instance: {
+      lang: string;
+      onstart: (() => void) | null;
+      onresult: ((ev: unknown) => void) | null;
+      onerror: ((ev: { error: string }) => void) | null;
+      onend: (() => void) | null;
+    }) => void
+  ) {
+    class MockWebkitSpeechRecognition {
+      lang = 'en-US';
+      interimResults = false;
+      continuous = false;
+      maxAlternatives = 1;
+      onstart: (() => void) | null = null;
+      onresult: ((ev: unknown) => void) | null = null;
+      onerror: ((ev: { error: string }) => void) | null = null;
+      onend: (() => void) | null = null;
+      start() {
+        this.onstart?.();
+        behavior(this);
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'SpeechRecognition', {
+      value: undefined,
+      configurable: true,
+    });
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      value: MockWebkitSpeechRecognition,
+      configurable: true,
+    });
+  }
+
+  it('captures spoken transcript via webkitSpeechRecognition and inserts it into the field', async () => {
+    installMockWebkitRecognition((rec) => {
+      rec.onresult?.({
+        resultIndex: 0,
+        results: [
+          Object.assign([{ transcript: 'Abebe Bikila' }], { isFinal: true }),
+        ],
+      });
+      rec.onend?.();
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: /Start registration/i })[0]);
+    await user.click(screen.getByRole('button', { name: /No, this is my own device/i }));
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+
+    await user.click(screen.getByRole('button', { name: /Start microphone/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Review what we heard/i)).toHaveValue('Abebe Bikila');
+    });
+
+    await user.click(screen.getByRole('button', { name: /Use this text/i }));
+    expect(screen.getByLabelText(/Full name/i)).toHaveValue('Abebe Bikila');
+  });
+
+  it('shows a clear error instead of empty review when microphone stops with no speech', async () => {
+    installMockWebkitRecognition((rec) => {
+      rec.onend?.();
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: /Start registration/i })[0]);
+    await user.click(screen.getByRole('button', { name: /No, this is my own device/i }));
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+
+    await user.click(screen.getByRole('button', { name: /Start microphone/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/No speech was heard/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByLabelText(/Review what we heard/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Try microphone again/i })).toBeInTheDocument();
+  });
+
+  it('recovers from permission denied and supports English dictation fallback when locale is unsupported', async () => {
+    let attempt = 0;
+    installMockWebkitRecognition((rec) => {
+      attempt += 1;
+      if (attempt === 1) {
+        rec.onerror?.({ error: 'not-allowed' });
+      } else if (rec.lang === 'om-ET') {
+        rec.onerror?.({ error: 'language-not-supported' });
+      } else {
+        rec.onresult?.({
+          resultIndex: 0,
+          results: [
+            Object.assign([{ transcript: 'Hanna Tesfaye' }], { isFinal: true }),
+          ],
+        });
+        rec.onend?.();
+      }
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: /Start registration/i })[0]);
+    await user.click(screen.getByRole('button', { name: /No, this is my own device/i }));
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+
+    // 1. Permission denied state offers Retry button
+    await user.click(screen.getByRole('button', { name: /Start microphone/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(/Microphone permission was blocked/i);
+    });
+    expect(screen.getByRole('button', { name: /Try microphone again/i })).toBeInTheDocument();
+
+    // 2. Switch to Afaan Oromo without server STT -> offers English dictation fallback immediately
+    await user.selectOptions(screen.getByLabelText(/Language/i), 'om');
+    const fallbackBtn = await screen.findByRole('button', { name: /Ingiliffaan dubbadhu/i });
+    await user.click(fallbackBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(/Review what we heard|Waan dhagahame ilaalaa/i)
+      ).toHaveValue('Hanna Tesfaye');
+    });
+  });
+
+  it('captures MediaRecorder audio chunks via server STT and populates the field', async () => {
+    resetCachedSpeechCapabilitiesForTest();
+    const originalFetch = globalThis.fetch;
+    const originalMediaRecorder = globalThis.MediaRecorder;
+    const originalMediaDevices = navigator.mediaDevices;
+
+    let recordedTimeslice: number | undefined;
+    let requestedData = false;
+
+    class MockMediaRecorder {
+      static isTypeSupported = () => true;
+      mimeType = 'audio/webm;codecs=opus';
+      state: 'inactive' | 'recording' = 'inactive';
+      ondataavailable: ((ev: { data: Blob }) => void) | null = null;
+      onstop: (() => void) | null = null;
+
+      start(timeslice?: number) {
+        recordedTimeslice = timeslice;
+        this.state = 'recording';
+        this.ondataavailable?.({ data: new Blob([new Uint8Array(600)], { type: this.mimeType }) });
+      }
+      requestData() {
+        requestedData = true;
+      }
+      stop() {
+        this.state = 'inactive';
+        this.onstop?.();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, 'MediaRecorder', {
+        value: MockMediaRecorder,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          getUserMedia: vi.fn(async () => ({
+            getTracks: () => [{ stop: vi.fn() }],
+          })),
+        },
+        configurable: true,
+      });
+      globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/api/speech/capabilities')) {
+          return new Response(
+            JSON.stringify({ geminiConfigured: true, supportedLanguages: ['en', 'am', 'om'] }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        if (url.includes('/api/speech/stt')) {
+          return new Response(
+            JSON.stringify({ transcript: 'Dawit Mekonnen', detectedLanguage: 'en', provider: 'gemini-stt' }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        return new Response('{}', { status: 404 });
+      }) as typeof fetch;
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await user.click(screen.getAllByRole('button', { name: /Start registration/i })[0]);
+      await user.click(screen.getByRole('button', { name: /No, this is my own device/i }));
+      await user.click(screen.getByRole('button', { name: /Continue/i }));
+
+      await user.click(screen.getByRole('button', { name: /Start microphone/i }));
+      const stopBtn = await screen.findByRole('button', { name: /Stop microphone/i });
+      expect(recordedTimeslice).toBe(250);
+
+      await user.click(stopBtn);
+      expect(requestedData).toBe(true);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Review what we heard/i)).toHaveValue('Dawit Mekonnen');
+      });
+
+      await user.click(screen.getByRole('button', { name: /Use this text/i }));
+      expect(screen.getByLabelText(/Full name/i)).toHaveValue('Dawit Mekonnen');
+    } finally {
+      Object.defineProperty(globalThis, 'MediaRecorder', {
+        value: originalMediaRecorder,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: originalMediaDevices,
+        configurable: true,
+      });
+      globalThis.fetch = originalFetch;
+      resetCachedSpeechCapabilitiesForTest();
+    }
+  });
+
+  it('auto-falls back from webkitSpeechRecognition network error to MediaRecorder server STT seamlessly', async () => {
+    resetCachedSpeechCapabilitiesForTest();
+    const originalFetch = globalThis.fetch;
+    const originalMediaRecorder = globalThis.MediaRecorder;
+    const originalMediaDevices = navigator.mediaDevices;
+
+    installMockWebkitRecognition((rec) => {
+      rec.onerror?.({ error: 'network' });
+    });
+
+    class MockMediaRecorder {
+      static isTypeSupported = () => true;
+      mimeType = 'audio/webm;codecs=opus';
+      state: 'inactive' | 'recording' = 'inactive';
+      ondataavailable: ((ev: { data: Blob }) => void) | null = null;
+      onstop: (() => void) | null = null;
+
+      start() {
+        this.state = 'recording';
+        this.ondataavailable?.({ data: new Blob([new Uint8Array(600)], { type: this.mimeType }) });
+      }
+      requestData() {}
+      stop() {
+        this.state = 'inactive';
+        this.onstop?.();
+      }
+    }
+
+    try {
+      Object.defineProperty(globalThis, 'MediaRecorder', {
+        value: MockMediaRecorder,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          getUserMedia: vi.fn(async () => ({
+            getTracks: () => [{ stop: vi.fn() }],
+          })),
+        },
+        configurable: true,
+      });
+      globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/api/speech/capabilities')) {
+          return new Response(
+            JSON.stringify({ geminiConfigured: true, supportedLanguages: ['en', 'am', 'om'] }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        if (url.includes('/api/speech/stt')) {
+          return new Response(
+            JSON.stringify({ transcript: 'Selamawit Tadesse', detectedLanguage: 'en', provider: 'gemini-stt' }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+        return new Response('{}', { status: 404 });
+      }) as typeof fetch;
+
+      const user = userEvent.setup();
+      render(<App />);
+
+      await user.click(screen.getAllByRole('button', { name: /Start registration/i })[0]);
+      await user.click(screen.getByRole('button', { name: /No, this is my own device/i }));
+      await user.click(screen.getByRole('button', { name: /Continue/i }));
+
+      await user.click(screen.getByRole('button', { name: /Start microphone/i }));
+      const stopBtn = await screen.findByRole('button', { name: /Stop microphone/i });
+      await user.click(stopBtn);
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/Review what we heard/i)).toHaveValue('Selamawit Tadesse');
+      });
+    } finally {
+      Object.defineProperty(globalThis, 'MediaRecorder', {
+        value: originalMediaRecorder,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: originalMediaDevices,
+        configurable: true,
+      });
+      globalThis.fetch = originalFetch;
+      resetCachedSpeechCapabilitiesForTest();
+    }
+  });
+});
+

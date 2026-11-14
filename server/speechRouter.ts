@@ -1,5 +1,5 @@
 import express, { type Request, type Response } from 'express';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 
 export type ThreeLang = 'en' | 'am' | 'om';
 
@@ -286,32 +286,107 @@ export function createSpeechRouter() {
     const safeMime = (mimeType || 'audio/webm').split(';')[0].trim();
     const isAuto = !targetLanguage || targetLanguage === 'auto';
     const languageHint = isAuto
-      ? 'The speaker is speaking one of ONLY three languages: Amharic (write in Ethiopic Fidel script), Afaan Oromo (write in Qubee Latin script), or English.'
+      ? 'The speaker is speaking English, Amharic (write in Ethiopic Fidel script), or Afaan Oromo (write in Qubee Latin script).'
       : targetLanguage === 'am'
-      ? 'The speaker is speaking Amharic (write verbatim in Ethiopic Fidel script).'
+      ? 'The speaker is speaking Amharic. Write the transcription verbatim in Ethiopic Fidel script.'
       : targetLanguage === 'om'
-      ? 'The speaker is speaking Afaan Oromo (write verbatim in Qubee Latin script).'
+      ? 'The speaker is speaking Afaan Oromo. Write the transcription verbatim in Qubee Latin script.'
       : 'The speaker is speaking English.';
 
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-transcribe',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                mimeType: safeMime,
-                data: audioBase64,
-              },
-            },
-            {
-              text: `Transcribe the spoken audio verbatim in its exact original language. ${languageHint} Never translate into English or another language. Return only the spoken words.`,
-            },
-          ],
-        },
-      });
+    const extractText = (resp: {
+      text?: string;
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
+    }): string => {
+      if (resp.text && resp.text.trim()) return resp.text.trim();
+      const parts = resp.candidates?.[0]?.content?.parts || [];
+      return parts
+        .filter((p) => !p.thought && typeof p.text === 'string')
+        .map((p) => p.text || '')
+        .join(' ')
+        .trim();
+    };
 
-      const transcript = (response.text || '').trim();
+    try {
+      const audioPart = {
+        inlineData: {
+          mimeType: safeMime,
+          data: audioBase64,
+        },
+      };
+
+      const transcribePrompt = `Transcribe this audio verbatim in its original language. ${languageHint} Return only the spoken words.`;
+
+      let transcript = '';
+      let primaryErr: unknown = null;
+      let fallbackErr: unknown = null;
+      let liteErr: unknown = null;
+
+      try {
+        const primaryResponse = await ai.models.generateContent({
+          model: 'gemini-3.5-transcribe',
+          contents: {
+            parts: [audioPart, { text: transcribePrompt }],
+          },
+          config: {
+            abortSignal: AbortSignal.timeout(9000),
+          },
+        });
+        transcript = extractText(primaryResponse);
+      } catch (err) {
+        primaryErr = err;
+        console.warn(
+          '[speechRouter] gemini-3.5-transcribe error:',
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+
+      if (!transcript) {
+        try {
+          const fallbackResponse = await ai.models.generateContent({
+            model: 'gemini-4-hydrogen',
+            contents: {
+              parts: [audioPart, { text: transcribePrompt }],
+            },
+            config: {
+              abortSignal: AbortSignal.timeout(10000),
+              thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+            },
+          });
+          transcript = extractText(fallbackResponse);
+        } catch (err) {
+          fallbackErr = err;
+          console.warn(
+            '[speechRouter] gemini-4-hydrogen STT fallback error:',
+            err instanceof Error ? err.message : String(err)
+          );
+        }
+      }
+
+      if (!transcript && (primaryErr || fallbackErr)) {
+        try {
+          const liteResponse = await ai.models.generateContent({
+            model: 'gemini-3.1-flash-lite',
+            contents: {
+              parts: [audioPart, { text: transcribePrompt }],
+            },
+            config: {
+              abortSignal: AbortSignal.timeout(9000),
+            },
+          });
+          transcript = extractText(liteResponse);
+        } catch (err) {
+          liteErr = err;
+          console.warn(
+            '[speechRouter] gemini-3.1-flash-lite STT fallback error:',
+            err instanceof Error ? err.message : String(err)
+          );
+        }
+      }
+
+      if (!transcript && (liteErr || (primaryErr && fallbackErr))) {
+        throw liteErr || fallbackErr || primaryErr;
+      }
+
       const detectedLanguage = transcript
         ? await detectLanguageServer(ai, transcript)
         : isAuto
@@ -324,10 +399,22 @@ export function createSpeechRouter() {
         provider: 'gemini-stt',
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Speech transcription failed.';
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      const isQuota =
+        rawMsg.includes('429') || rawMsg.includes('RESOURCE_EXHAUSTED') || rawMsg.includes('quota');
+      const isBusy =
+        rawMsg.includes('503') ||
+        rawMsg.includes('UNAVAILABLE') ||
+        rawMsg.includes('Timeout') ||
+        rawMsg.includes('aborted');
+      const friendly = isQuota
+        ? 'Speech transcription quota reached on the server. Please try again shortly, use browser speech recognition, or type your answer.'
+        : isBusy
+        ? 'Speech service is temporarily busy. Please try again or type your answer.'
+        : 'Could not transcribe audio right now. Please try again or type your answer.';
       res.status(502).json({
-        error: message,
-        code: 'STT_FAILED',
+        error: friendly,
+        code: isQuota ? 'STT_QUOTA' : isBusy ? 'STT_BUSY' : 'STT_FAILED',
       });
     }
   });

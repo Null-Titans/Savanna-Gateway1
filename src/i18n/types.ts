@@ -46,6 +46,8 @@ export interface TranslationDictionary {
     stepOf: string;
     noTimeoutNotice: string;
     errorSummaryTitle: string;
+    darkModeLabel: string;
+    lightModeLabel: string;
   };
   nav: {
     gateway: string;
@@ -88,6 +90,10 @@ export interface TranslationDictionary {
     readToAssistantOption: string;
     readToAssistantReminder: string;
     detectedLanguageLabel: string;
+    permissionPromptNote: string;
+    retryMic: string;
+    emptySpeechError: string;
+    fallbackEnglishButton: string;
   };
   voiceAssistant: {
     title: string;

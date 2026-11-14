@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CheckCircle2, Lock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Lock } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { JobApplicationDraft, JobPosting, SubmissionReceipt } from '../../types/gateway';
 import { gatewayApi } from '../../services/api/client';
@@ -118,12 +118,18 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
         },
         renderContent: () => (
           <div className="space-y-4">
-            <div className="flex items-start gap-2.5 rounded-lg border border-teal-800/30 bg-teal-50 p-3.5 text-sm text-teal-950">
-              <Lock className="w-4 h-4 shrink-0 mt-0.5 text-teal-800" aria-hidden="true" />
-              <span>{t.career.filterPrivacyNote}</span>
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/50 p-4 text-sm text-[#0F1E36] dark:text-amber-100">
+              <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-800 dark:text-amber-400" aria-hidden="true" />
+              <span className="font-medium">{t.career.filterPrivacyNote}</span>
             </div>
 
-            <label className="flex items-start gap-3 min-h-[52px] p-4 rounded-xl border-2 border-slate-300 bg-white cursor-pointer">
+            <label
+              className={`flex items-start gap-3 min-h-[52px] p-4 rounded-xl border-2 transition-colors cursor-pointer ${
+                appDraft.shareAccommodationRequest
+                  ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15'
+                  : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:bg-[#F3F4F6]/60 dark:hover:bg-slate-800'
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={appDraft.shareAccommodationRequest}
@@ -134,9 +140,9 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
                     explicitConsentToShare: e.target.checked ? p.explicitConsentToShare : false,
                   }))
                 }
-                className="mt-1 h-5 w-5 shrink-0"
+                className="mt-1 h-5 w-5 shrink-0 accent-[#0F1E36] dark:accent-amber-500"
               />
-              <span className="text-base font-medium text-slate-900">
+              <span className="text-base font-medium text-[#0F1E36] dark:text-slate-100">
                 {t.career.applyFlow.shareToggleLabel}
               </span>
             </label>
@@ -153,7 +159,11 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
 
                 <label
                   htmlFor="gw-app-explicit-consent"
-                  className="flex items-start gap-3 min-h-[52px] p-4 rounded-xl border-2 border-slate-500 bg-slate-50 cursor-pointer"
+                  className={`flex items-start gap-3 min-h-[52px] p-4 rounded-xl border-2 transition-colors cursor-pointer ${
+                    appDraft.explicitConsentToShare
+                      ? 'border-[#0F1E36] dark:border-amber-400 bg-[#0F1E36]/[0.05] dark:bg-amber-500/15'
+                      : 'border-amber-400 dark:border-amber-600 bg-amber-50/70 dark:bg-amber-950/50'
+                  }`}
                 >
                   <input
                     id="gw-app-explicit-consent"
@@ -162,9 +172,9 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
                     onChange={(e) =>
                       setAppDraft((p) => ({ ...p, explicitConsentToShare: e.target.checked }))
                     }
-                    className="mt-1 h-5 w-5 shrink-0"
+                    className="mt-1 h-5 w-5 shrink-0 accent-[#0F1E36] dark:accent-amber-500"
                   />
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-[#0F1E36] dark:text-amber-100">
                     {t.career.applyFlow.explicitConsentLabel}
                   </span>
                 </label>
@@ -217,19 +227,24 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
   if (receipt) {
     return (
       <section aria-labelledby="gw-job-app-done" className="max-w-3xl mx-auto">
-        <div className="rounded-2xl border-2 border-emerald-700 bg-white p-6 sm:p-8 space-y-5">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-7 h-7 text-emerald-700 shrink-0" aria-hidden="true" />
+        <div className="rounded-2xl border-2 border-emerald-700 dark:border-emerald-600 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm space-y-5">
+          <div className="flex items-start gap-3.5">
+            <span className="w-11 h-11 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
+            </span>
             <div>
-              <h2 id="gw-job-app-done" className="text-2xl font-bold text-slate-900">
+              <h2
+                id="gw-job-app-done"
+                className="text-2xl font-bold text-[#0F1E36] dark:text-white tracking-tight"
+              >
                 {t.career.applyFlow.submittedTitle}
               </h2>
-              <p className="text-sm text-slate-700 mt-1">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mt-1 tabular-nums">
                 {job.title} · {job.organization} · Ref {receipt.id}
               </p>
             </div>
           </div>
-          <p className="text-base text-slate-800 bg-slate-50 border border-slate-300 rounded-xl p-4">
+          <p className="text-base text-[#0F1E36] dark:text-slate-100 bg-[#F3F4F6] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 leading-relaxed">
             {receipt.persistedToServer
               ? t.career.applyFlow.submittedBodyReal
               : t.career.applyFlow.submittedBodyDemo}
@@ -237,13 +252,10 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
           <button
             type="button"
             onClick={onBackToJobs}
-            className="min-h-[48px] px-5 py-2.5 rounded-xl text-base font-semibold"
-            style={{
-              backgroundColor: 'var(--gw-primary)',
-              color: 'var(--gw-primary-text)',
-            }}
+            className="inline-flex items-center gap-2 min-h-[48px] px-6 py-2.5 rounded-md text-base font-bold bg-amber-500 hover:bg-amber-400 text-[#0F1E36] transition-colors shadow-sm cursor-pointer"
           >
-            {t.career.applyFlow.backToJobs}
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <span>{t.career.applyFlow.backToJobs}</span>
           </button>
         </div>
       </section>
@@ -251,13 +263,14 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className="max-w-3xl mx-auto space-y-5">
       <button
         type="button"
         onClick={onBackToJobs}
-        className="min-h-[44px] px-3 py-2 text-sm font-semibold text-slate-800 underline hover:text-slate-950"
+        className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
       >
-        ← {t.career.applyFlow.backToJobs}
+        <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+        <span>{t.career.applyFlow.backToJobs}</span>
       </button>
 
       <OneQuestionEngine
@@ -286,11 +299,15 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
         submitError={submitError}
         onRetrySubmit={handleSubmit}
         renderReviewContent={() => (
-          <dl className="divide-y divide-slate-200 border border-slate-300 rounded-xl bg-slate-50/50">
+          <dl className="divide-y divide-slate-200 dark:divide-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl bg-[#F3F4F6]/60 dark:bg-slate-800/60">
             <div className="p-4 flex items-start justify-between gap-4">
               <div>
-                <dt className="text-xs font-semibold text-slate-600">{t.onboarding.stepNameLabel}</dt>
-                <dd className="text-base font-medium text-slate-900">{appDraft.applicantName}</dd>
+                <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  {t.onboarding.stepNameLabel}
+                </dt>
+                <dd className="text-base font-medium text-[#0F1E36] dark:text-white mt-0.5">
+                  {appDraft.applicantName}
+                </dd>
               </div>
               <button
                 type="button"
@@ -298,15 +315,19 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
                   setIsReview(false);
                   setStepIndex(0);
                 }}
-                className="min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium"
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 {t.common.edit}
               </button>
             </div>
             <div className="p-4 flex items-start justify-between gap-4">
               <div>
-                <dt className="text-xs font-semibold text-slate-600">{t.onboarding.stepContactValueLabel}</dt>
-                <dd className="text-base font-medium text-slate-900">{appDraft.contactValue}</dd>
+                <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  {t.onboarding.stepContactValueLabel}
+                </dt>
+                <dd className="text-base font-medium text-[#0F1E36] dark:text-white mt-0.5">
+                  {appDraft.contactValue}
+                </dd>
               </div>
               <button
                 type="button"
@@ -314,15 +335,17 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
                   setIsReview(false);
                   setStepIndex(1);
                 }}
-                className="min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium"
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 {t.common.edit}
               </button>
             </div>
             <div className="p-4 flex items-start justify-between gap-4">
               <div>
-                <dt className="text-xs font-semibold text-slate-600">Experience</dt>
-                <dd className="text-base text-slate-900">
+                <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Experience
+                </dt>
+                <dd className="text-base text-[#0F1E36] dark:text-white mt-0.5">
                   {appDraft.relevantExperience || 'Skipped'}
                 </dd>
               </div>
@@ -332,15 +355,17 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
                   setIsReview(false);
                   setStepIndex(2);
                 }}
-                className="min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium"
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 {t.common.edit}
               </button>
             </div>
             <div className="p-4 flex items-start justify-between gap-4">
               <div>
-                <dt className="text-xs font-semibold text-slate-600">Share adjustment request with employer?</dt>
-                <dd className="text-base text-slate-900">
+                <dt className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                  Share adjustment request with employer?
+                </dt>
+                <dd className="text-base text-[#0F1E36] dark:text-white mt-0.5">
                   {appDraft.shareAccommodationRequest && appDraft.explicitConsentToShare
                     ? `Yes (consented): ${appDraft.accommodationRequestNote || 'Requested interview adjustment'}`
                     : 'No — kept private'}
@@ -352,7 +377,7 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
                   setIsReview(false);
                   setStepIndex(3);
                 }}
-                className="min-h-[44px] px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium"
+                className="min-h-[44px] px-3.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 {t.common.edit}
               </button>
