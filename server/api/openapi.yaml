@@ -1,0 +1,2320 @@
+openapi: 3.1.0
+info:
+  title: Accessible Onboarding & Career Gateway API
+  version: 1.0.0
+  description: |
+    Multi-tenant, platform-independent backend for the Accessible Onboarding &
+    Career Gateway. All protected resources are scoped to an **organizationId**
+    derived from the authenticated principal.
+
+    ## Security
+    - **BearerAuth** â€“ JWT issued by `/api/v1/org/auth/login`. Scopes encoded
+      in the token (`org_admin`, `employer`, `partner`). Org admin â‰  employer â‰  partner.
+    - **ApiKeyAuth** â€“ opaque key sent in the `X-Api-Key` header for
+      server-to-server integrations.
+    - Public routes require no credentials.
+    - Widget endpoints accept only the public `widgetKey` opaque identifier and
+      never grant administrative access.
+
+  contact:
+    name: Gateway Platform Team
+  license:
+    name: Private
+
+servers:
+  - url: https://api.example.com/api/v1
+    description: Production
+  - url: http://localhost:4000/api/v1
+    description: Local development
+
+tags:
+  - name: Widget
+    description: Embeddable widget configuration (public)
+  - name: Onboarding
+    description: Learner onboarding sessions and draft management
+  - name: Partners
+    description: Partner referral and learner consent records
+  - name: Jobs
+    description: Public job board
+  - name: Applications
+    description: Job applications (learner view)
+  - name: OrgAuth
+    description: Organisation authentication (login / refresh / logout)
+  - name: OrgMembers
+    description: Organisation member management (org admin)
+  - name: OrgConfig
+    description: Organisation platform configuration (org admin)
+  - name: OrgCredentials
+    description: API integration credentials (org admin)
+  - name: EmployerJobs
+    description: Employer job management
+  - name: EmployerAccommodations
+    description: Employer accommodation detail management
+  - name: EmployerApplications
+    description: Employer application review
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# PATHS
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+paths:
+
+  # â”€â”€ Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /widget/{widgetKey}/config:
+    get:
+      operationId: getWidgetConfig
+      tags: [Widget]
+      summary: Fetch embeddable widget configuration
+      description: >
+        Returns the public configuration for a widget identified by its opaque
+        `widgetKey`. No authentication required. The key never grants admin
+        access.
+      parameters:
+        - $ref: '#/components/parameters/widgetKey'
+      responses:
+        '200':
+          description: Widget configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WidgetConfig'
+              example:
+                organizationName: Sunrise Staffing
+                primaryColor: '#1A73E8'
+                logoUrl: https://cdn.example.com/sunrise-logo.png
+                welcomeMessage: Welcome to Sunrise â€” let's get you started.
+                enableSmsResume: true
+                enablePartnerReferral: true
+                jobBoardEnabled: true
+                supportedLanguages: [en, am]
+                defaultLanguage: en
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # â”€â”€ Capabilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /capabilities:
+    get:
+      operationId: getCapabilities
+      tags: [Onboarding]
+      summary: Server capability flags
+      description: Returns feature-flag snapshot; used by the frontend at startup.
+      responses:
+        '200':
+          description: Capability flags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capabilities'
+              example:
+                serverDraftsEnabled: true
+                smsResumeEnabled: true
+
+  # â”€â”€ Onboarding sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /onboarding/sessions:
+    post:
+      operationId: startOnboardingSession
+      tags: [Onboarding]
+      summary: Start a new onboarding session
+      description: >
+        Creates a server-side onboarding session and returns a `sessionId` and
+        a short-lived `draftToken` the client uses to resume later.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isSharedDevice, registrationMode]
+              properties:
+                isSharedDevice:
+                  type: boolean
+                  description: >
+                    Signals that personal data should be cleared from the device
+                    after submission.
+                registrationMode:
+                  $ref: '#/components/schemas/RegistrationMode'
+                widgetKey:
+                  type: string
+                  description: Optional â€” associates the session with a widget tenant.
+            example:
+              isSharedDevice: false
+              registrationMode: self
+              widgetKey: wk_sunrise_abc123
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sessionId, draftToken, expiresAtIso]
+                properties:
+                  sessionId:
+                    type: string
+                  draftToken:
+                    type: string
+                    description: Short-lived opaque token for SMS resume flow.
+                  expiresAtIso:
+                    type: string
+                    format: date-time
+              example:
+                sessionId: sess_01HXYZ123
+                draftToken: dt_abcdef789
+                expiresAtIso: '2026-11-15T10:52:46Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /onboarding/sessions/{sessionId}/draft:
+    parameters:
+      - $ref: '#/components/parameters/sessionId'
+    get:
+      operationId: getOnboardingDraft
+      tags: [Onboarding]
+      summary: Retrieve the current draft for a session
+      security:
+        - SessionTokenAuth: []
+      responses:
+        '200':
+          description: Current draft state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingDraft'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateOnboardingDraft
+      tags: [Onboarding]
+      summary: Save / update the onboarding draft
+      security:
+        - SessionTokenAuth: []
+      description: >
+        Idempotent upsert. The client may call this repeatedly as the user
+        progresses through the form. `supportNotes` are stored server-side and
+        **must never** be surfaced in employer-facing responses.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingDraft'
+            example:
+              isSharedDevice: false
+              registrationMode: self
+              fullName: Amara Tesfaye
+              contactMethod: email
+              contactValue: amara@example.com
+              identityRoute: none
+              identityReferenceNumber: ''
+              partnerReferralOrg: ''
+              supportPreferences: [sign-language, written-instructions]
+              supportNotes: Prefers written instructions for all communication.
+              updatedAtIso: '2026-11-14T10:00:00Z'
+      responses:
+        '200':
+          description: Draft saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingDraft'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /onboarding/sessions/{sessionId}/submit:
+    post:
+      operationId: submitOnboardingSession
+      tags: [Onboarding]
+      summary: Submit a completed onboarding session
+      description: >
+        Finalises the session. Returns a `SubmissionReceipt`. If
+        `isSharedDevice` was set, the response body will instruct the client to
+        clear local storage.
+      parameters:
+        - $ref: '#/components/parameters/sessionId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partnerConsent:
+                  $ref: '#/components/schemas/ConsentRecord'
+      responses:
+        '200':
+          description: Submission accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionReceipt'
+              example:
+                id: sub_01HABC999
+                submittedAtIso: '2026-11-14T10:52:46Z'
+                mode: online
+                persistedToServer: true
+                notice: Your profile has been saved. A counsellor will be in touch.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  # Legacy submission endpoint (frontend contract compatibility)
+  /onboarding/submissions:
+    post:
+      operationId: submitOnboardingDirect
+      tags: [Onboarding]
+      summary: Direct onboarding submission (legacy frontend contract)
+      description: >
+        Accepts a full `OnboardingDraft` without a prior session. Maintained for
+        frontend compatibility. Prefer the session-based flow for new clients.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingDraft'
+      responses:
+        '200':
+          description: Submission accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionReceipt'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /onboarding/resume-sms:
+    post:
+      operationId: resumeViaSms
+      tags: [Onboarding]
+      summary: Send an SMS link so the learner can resume their draft later
+      description: >
+        Sends a one-time SMS containing a magic link with the `draftToken`.
+        Accommodation filter parameters and `supportNotes` are **never**
+        included in the SMS payload.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, draftToken]
+              properties:
+                phone:
+                  type: string
+                  description: E.164-formatted phone number.
+                  pattern: '^\+[1-9]\d{6,14}$'
+                draftToken:
+                  type: string
+            example:
+              phone: '+251911234567'
+              draftToken: dt_abcdef789
+      responses:
+        '200':
+          description: SMS dispatch result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sent, message]
+                properties:
+                  sent:
+                    type: boolean
+                  message:
+                    type: string
+              example:
+                sent: true
+                message: Resume link sent to +251911234567.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+
+  # â”€â”€ Partners & Consent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /partners/referrals:
+    post:
+      operationId: createPartnerReferral
+      tags: [Partners]
+      summary: Submit a partner referral for a learner
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [learnerName, partnerOrganizationName, referralReason]
+              properties:
+                learnerName:
+                  type: string
+                partnerOrganizationName:
+                  type: string
+                referralReason:
+                  type: string
+                contactValue:
+                  type: string
+                  description: >
+                    Optional contact (email or phone) for follow-up. Not
+                    shared without explicit consent.
+                notes:
+                  type: string
+                  description: >
+                    Internal referral notes â€” **never** surfaced to employers.
+            example:
+              learnerName: Amara Tesfaye
+              partnerOrganizationName: Hope Employment Center
+              referralReason: Work-readiness training graduate
+              contactValue: amara@example.com
+      responses:
+        '201':
+          description: Referral created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [referralId, createdAtIso]
+                properties:
+                  referralId:
+                    type: string
+                  createdAtIso:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /consent/{consentId}:
+    parameters:
+      - name: consentId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Opaque consent record identifier.
+    get:
+      operationId: getConsentRecord
+      tags: [Partners]
+      summary: Retrieve a consent record
+      responses:
+        '200':
+          description: Consent record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: recordConsent
+      tags: [Partners]
+      summary: Record learner consent
+      description: >
+        Records explicit learner consent before any accommodation request or
+        personal data is shared with an employer or partner. Consent is
+        **required** before `shareAccommodationRequest` takes effect.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+            example:
+              learnerConsented: true
+              consentLanguage: en
+              partnerOrganizationName: Hope Employment Center
+              representativeName: Meron Alemu
+              sharedFieldsSummary: Name, contact, accommodation category
+              recordedAtIso: '2026-11-14T10:30:00Z'
+      responses:
+        '200':
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # â”€â”€ Jobs (public) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [Jobs]
+      summary: Search the public job board
+      description: >
+        Returns `JobPosting[]` matching the query. The `accommodations` filter
+        parameter is applied server-side only and **must never be stored** or
+        linked to an applicant identity.
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Free-text search term (title, skills, description).
+        - name: accommodations
+          in: query
+          schema:
+            type: string
+          description: >
+            Comma-separated accommodation category filter.
+            **Never stored per applicant.**
+        - name: employmentType
+          in: query
+          schema:
+            $ref: '#/components/schemas/EmploymentType'
+        - name: isRemote
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of job postings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total, page, limit]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobPosting'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    post:
+      operationId: createJobLegacy
+      tags: [Jobs]
+      summary: Create a job posting (legacy frontend contract)
+      description: >
+        Legacy endpoint maintained for frontend compatibility. New integrations
+        should use `POST /employer/jobs` instead (requires employer JWT).
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJobRequest'
+      responses:
+        '201':
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPosting'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /jobs/{jobId}:
+    parameters:
+      - $ref: '#/components/parameters/jobId'
+    get:
+      operationId: getJob
+      tags: [Jobs]
+      summary: Get a single job posting
+      responses:
+        '200':
+          description: Job posting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPosting'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # â”€â”€ Job Applications (learner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /jobs/{jobId}/applications:
+    post:
+      operationId: applyForJob
+      tags: [Applications]
+      summary: Submit a job application
+      description: >
+        The `shareAccommodationRequest` field requires `explicitConsentToShare`
+        to be `true`. If consent is absent or false, accommodation details are
+        **not forwarded** to the employer.
+      parameters:
+        - $ref: '#/components/parameters/jobId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobApplicationDraft'
+            example:
+              jobId: job_01HXYZ456
+              applicantName: Amara Tesfaye
+              contactValue: amara@example.com
+              relevantExperience: 3 years in customer support and data entry.
+              shareAccommodationRequest: true
+              accommodationRequestNote: Need screen-reader-compatible interface.
+              explicitConsentToShare: true
+      responses:
+        '201':
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionReceipt'
+              example:
+                id: app_01HABC111
+                submittedAtIso: '2026-11-14T11:00:00Z'
+                mode: online
+                persistedToServer: true
+                notice: Your application has been received.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /applications/{applicationId}:
+    parameters:
+      - $ref: '#/components/parameters/applicationId'
+    get:
+      operationId: getLearnerApplication
+      tags: [Applications]
+      summary: Learner view of their own application
+      description: >
+        Returns the learner's own application record. Does **not** include
+        internal support notes, employer review notes, or private filters.
+      responses:
+        '200':
+          description: Learner application record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearnerApplicationRecord'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /applications/{applicationId}/consent:
+    parameters:
+      - $ref: '#/components/parameters/applicationId'
+    put:
+      operationId: updateApplicationConsent
+      tags: [Applications]
+      summary: Update consent for sharing accommodation with employer
+      description: >
+        Allows the learner to grant or revoke explicit consent to share their
+        accommodation request with the employer. Revocation must be honoured
+        immediately.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [explicitConsentToShare]
+              properties:
+                explicitConsentToShare:
+                  type: boolean
+      responses:
+        '200':
+          description: Consent updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [applicationId, explicitConsentToShare, updatedAtIso]
+                properties:
+                  applicationId:
+                    type: string
+                  explicitConsentToShare:
+                    type: boolean
+                  updatedAtIso:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # â”€â”€ Org Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /org/auth/login:
+    post:
+      operationId: orgLogin
+      tags: [OrgAuth]
+      summary: Organisation member login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+            example:
+              email: admin@sunrise.example.com
+              password: s3cur3P@ss!
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenPair'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /org/auth/refresh:
+    post:
+      operationId: orgRefreshToken
+      tags: [OrgAuth]
+      summary: Refresh an access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: New token pair issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenPair'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /org/auth/logout:
+    post:
+      operationId: orgLogout
+      tags: [OrgAuth]
+      summary: Invalidate the current session / refresh token
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '204':
+          description: Logged out
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # â”€â”€ Org Members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /org/members:
+    get:
+      operationId: listOrgMembers
+      tags: [OrgMembers]
+      summary: List organisation members
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/OrgRole'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Member list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrgMember'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      operationId: updateOrgMember
+      tags: [OrgMembers]
+      summary: Update an organisation member (role, status)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [memberId]
+              properties:
+                memberId:
+                  type: string
+                role:
+                  $ref: '#/components/schemas/OrgRole'
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Member updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgMember'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /org/members/invite:
+    post:
+      operationId: inviteOrgMember
+      tags: [OrgMembers]
+      summary: Invite a new member to the organisation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                role:
+                  $ref: '#/components/schemas/OrgRole'
+                displayName:
+                  type: string
+            example:
+              email: employer@sunrise.example.com
+              role: employer
+              displayName: Sunrise HR Manager
+      responses:
+        '201':
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [inviteId, email, role, sentAtIso]
+                properties:
+                  inviteId:
+                    type: string
+                  email:
+                    type: string
+                  role:
+                    $ref: '#/components/schemas/OrgRole'
+                  sentAtIso:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # â”€â”€ Org Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /org/config:
+    get:
+      operationId: getOrgConfig
+      tags: [OrgConfig]
+      summary: Get organisation platform configuration
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Organisation configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      operationId: updateOrgConfig
+      tags: [OrgConfig]
+      summary: Update organisation platform configuration
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgConfig'
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # â”€â”€ Org Credentials â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /org/credentials:
+    post:
+      operationId: createCredential
+      tags: [OrgCredentials]
+      summary: Create a new API integration credential
+      description: >
+        Returns the plaintext API key **once**. Store it securely â€” it cannot
+        be retrieved again.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label]
+              properties:
+                label:
+                  type: string
+                  description: Human-readable label for this credential.
+                  maxLength: 100
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                  description: >
+                    Permitted scopes for this key (e.g. `referrals:write`).
+      responses:
+        '201':
+          description: Credential created â€” plaintext key shown once
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [credentialId, label, apiKey, createdAtIso]
+                properties:
+                  credentialId:
+                    type: string
+                  label:
+                    type: string
+                  apiKey:
+                    type: string
+                    description: Plaintext key â€” shown once only.
+                  scopes:
+                    type: array
+                    items:
+                      type: string
+                  createdAtIso:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    get:
+      operationId: listCredentials
+      tags: [OrgCredentials]
+      summary: List API integration credentials (metadata only)
+      description: Returns credential metadata. The plaintext key is never returned.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Credential list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CredentialSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /org/credentials/{credentialId}:
+    parameters:
+      - name: credentialId
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      operationId: revokeCredential
+      tags: [OrgCredentials]
+      summary: Revoke and delete an API credential
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Credential revoked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # â”€â”€ Employer Jobs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /employer/jobs:
+    post:
+      operationId: employerCreateJob
+      tags: [EmployerJobs]
+      summary: Create a job posting
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJobRequest'
+            example:
+              title: Customer Support Specialist
+              location: Addis Ababa, Ethiopia
+              isRemote: false
+              employmentType: full-time
+              descriptionSummary: >
+                Handle inbound customer queries for our e-commerce platform.
+              requiredSkills: [communication, Amharic, English]
+              accommodationCategories: [mobility, hearing]
+              accommodationsOffered: true
+              accommodationDetails:
+                workEnvironmentAccessibility: Wheelchair-accessible office
+                remoteOrFlexibleArrangements: Flexible start times available
+                assistiveTechnologyAvailable: Screen-reader-compatible desktop
+                communicationOptions: Written instructions on request
+                interviewAccommodations: Remote interview available
+                applicationProcessAccommodations: Extended deadline on request
+                additionalSupportOffered: Job coach introduction available
+              applicationDeadline: '2026-12-31'
+      responses:
+        '201':
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPosting'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    get:
+      operationId: employerListJobs
+      tags: [EmployerJobs]
+      summary: List employer's own job postings
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, closed, draft]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Employer job list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobPosting'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /employer/jobs/{jobId}:
+    parameters:
+      - $ref: '#/components/parameters/jobId'
+    get:
+      operationId: employerGetJob
+      tags: [EmployerJobs]
+      summary: Get a specific employer job posting
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Job posting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPosting'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: employerUpdateJob
+      tags: [EmployerJobs]
+      summary: Update a job posting
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJobRequest'
+      responses:
+        '200':
+          description: Job updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPosting'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: employerDeleteJob
+      tags: [EmployerJobs]
+      summary: Delete (close) a job posting
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Job deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /employer/jobs/{jobId}/applications:
+    parameters:
+      - $ref: '#/components/parameters/jobId'
+    get:
+      operationId: employerListApplications
+      tags: [EmployerJobs]
+      summary: List applications for an employer's job posting
+      description: >
+        Returns **only** fields the applicant has consented to share.
+        `supportNotes` and accommodation details are **omitted** unless
+        `explicitConsentToShare` is true.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, reviewing, shortlisted, rejected]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Application list (employer-safe view)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmployerApplicationView'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # â”€â”€ Employer Accommodations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /employer/accommodations:
+    get:
+      operationId: employerGetAccommodations
+      tags: [EmployerAccommodations]
+      summary: Get employer accommodation details
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Accommodation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerAccommodationDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      operationId: employerUpdateAccommodations
+      tags: [EmployerAccommodations]
+      summary: Update employer accommodation details
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployerAccommodationDetails'
+      responses:
+        '200':
+          description: Accommodation details updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerAccommodationDetails'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # â”€â”€ Employer Applications â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /employer/applications/{applicationId}:
+    parameters:
+      - $ref: '#/components/parameters/applicationId'
+    get:
+      operationId: employerGetApplication
+      tags: [EmployerApplications]
+      summary: Get a single application (employer view)
+      description: >
+        Returns the employer-safe view. `supportNotes` and private filters are
+        **never** included. Accommodation details appear only if
+        `explicitConsentToShare` is true.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Employer-safe application record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerApplicationView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: employerUpdateApplication
+      tags: [EmployerApplications]
+      summary: Update application status or add employer notes
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [new, reviewing, shortlisted, rejected]
+                employerNotes:
+                  type: string
+                  description: >
+                    Employer-internal notes. These are **never** surfaced to the
+                    learner or any support/case-worker view.
+      responses:
+        '200':
+          description: Application updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerApplicationView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# COMPONENTS
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+components:
+
+  # â”€â”€ Security Schemes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT issued at `/api/v1/org/auth/login`. The token payload contains
+        `organizationId`, `memberId`, and `scope` (`org_admin` | `employer` |
+        `partner`). Scopes are mutually exclusive â€” an org admin token does not
+        grant employer access and vice-versa.
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: >
+        Opaque API key for server-to-server integrations. Keys are created at
+        `POST /api/v1/org/credentials` and scoped to specific operations.
+        Stored server-side as SHA-256(key + per-key salt). Never logged or
+        returned after initial creation.
+    SessionTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Session-Token
+      description: >
+        Short-lived opaque session token returned by `POST /onboarding/sessions`.
+        Stored in-memory on the client only — never in localStorage, URLs, or
+        analytics payloads. Used to authenticate draft save and submit calls
+        for anonymous learners. Token value is hashed server-side (SHA-256)
+        before storage. Never logged in access logs.
+
+  # â”€â”€ Parameters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  parameters:
+    widgetKey:
+      name: widgetKey
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Opaque public widget identifier. Never grants admin access.
+
+    sessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Onboarding session identifier returned by `POST /onboarding/sessions`.
+
+    jobId:
+      name: jobId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique job posting identifier.
+
+    applicationId:
+      name: applicationId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique job application identifier.
+
+  # â”€â”€ Responses â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  responses:
+    BadRequest:
+      description: Validation error or malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Validation failed
+            code: VALIDATION_ERROR
+            details:
+              - field: contactValue
+                message: Must be a valid email address or E.164 phone number
+
+    Unauthorized:
+      description: Missing or invalid authentication credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Unauthorized
+            code: AUTH_REQUIRED
+
+    Forbidden:
+      description: Authenticated but insufficient scope / permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Forbidden
+            code: INSUFFICIENT_SCOPE
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Not found
+            code: NOT_FOUND
+
+    Conflict:
+      description: Resource already exists or state conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Conflict
+            code: DUPLICATE_RESOURCE
+
+    TooManyRequests:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until the client may retry.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Too many requests
+            code: RATE_LIMITED
+
+    BadGateway:
+      description: Upstream service (e.g. SMS provider) returned an error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: SMS provider unavailable
+            code: UPSTREAM_ERROR
+
+    ServiceUnavailable:
+      description: Service temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Service temporarily unavailable
+            code: SERVICE_UNAVAILABLE
+
+  # â”€â”€ Schemas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  schemas:
+
+    # â”€â”€ Primitives & Enums â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    RegistrationMode:
+      type: string
+      enum: [self, partner_assisted]
+      description: >
+        `self` â€” the learner is registering independently;
+        `assisted` â€” a support worker is helping;
+        `partner-referred` â€” a partner organisation initiated the session.
+
+    EmploymentType:
+      type: string
+      enum: ['Full-time', 'Part-time', 'Apprenticeship', 'Contract', 'Fellowship']
+
+    OrgRole:
+      type: string
+      enum: [org_admin, employer, partner, support_worker]
+      description: >
+        JWT scope values. `org_admin` â‰  `employer` â‰  `partner` â€” tokens are
+        issued per scope and do not carry combined permissions.
+
+    AccommodationCategory:
+      type: string
+      enum:
+        - remote_flexible
+        - flexible_hours
+        - screen_reader_tools
+        - accessible_workplace
+        - assistive_tech
+        - communication_support
+        - other_accommodations
+
+    ContactMethod:
+      type: string
+      enum: [email, phone, sms]
+
+    # â”€â”€ Core Domain Schemas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    OnboardingDraft:
+      type: object
+      required:
+        - isSharedDevice
+        - registrationMode
+        - updatedAtIso
+      description: >
+        The learner's in-progress onboarding form state. `supportNotes` are
+        stored server-side and **must never appear** in employer-facing
+        responses. No field may require a disability diagnosis, medical proof,
+        or government-issued kebele ID.
+      properties:
+        isSharedDevice:
+          type: boolean
+        registrationMode:
+          $ref: '#/components/schemas/RegistrationMode'
+        fullName:
+          type: string
+          maxLength: 200
+        contactMethod:
+          $ref: '#/components/schemas/ContactMethod'
+        contactValue:
+          type: string
+          description: Email address or E.164 phone number depending on `contactMethod`.
+        identityRoute:
+          type: string
+          description: >
+            Optional self-selected identity path (e.g. `none`, `refugee-id`,
+            `national-id`). Never requires medical or diagnosis documentation.
+        identityReferenceNumber:
+          type: string
+          description: >
+            Reference number for the chosen identity route. Optional and
+            never mandatory.
+        partnerReferralOrg:
+          type: string
+        supportPreferences:
+          type: array
+          items:
+            type: string
+          description: >
+            Self-reported support preferences (e.g. `sign-language`,
+            `written-instructions`). Never stored as a disability diagnosis.
+        supportNotes:
+          type: string
+          description: >
+            Free-text notes from support workers. **Private â€” never expose to
+            employers or in public responses.**
+        partnerConsent:
+          $ref: '#/components/schemas/ConsentRecord'
+        updatedAtIso:
+          type: string
+          format: date-time
+      example:
+        isSharedDevice: false
+        registrationMode: self
+        fullName: Amara Tesfaye
+        contactMethod: email
+        contactValue: amara@example.com
+        identityRoute: none
+        identityReferenceNumber: ''
+        partnerReferralOrg: ''
+        supportPreferences: [written-instructions]
+        supportNotes: Prefers written communication.
+        updatedAtIso: '2026-11-14T09:00:00Z'
+
+    ConsentRecord:
+      type: object
+      required:
+        - learnerConsented
+        - consentLanguage
+        - partnerOrganizationName
+        - representativeName
+        - sharedFieldsSummary
+        - recordedAtIso
+      description: >
+        Records explicit, informed consent before personal data or
+        accommodation details are shared. Must be collected before any
+        disclosure to employers or partner organisations.
+      properties:
+        learnerConsented:
+          type: boolean
+        consentLanguage:
+          type: string
+          description: BCP 47 language tag for the language in which consent was given.
+          example: en
+        partnerOrganizationName:
+          type: string
+        representativeName:
+          type: string
+        sharedFieldsSummary:
+          type: string
+          description: Plain-language description of what will be shared.
+        recordedAtIso:
+          type: string
+          format: date-time
+
+    JobPosting:
+      type: object
+      required:
+        - id
+        - title
+        - organization
+        - location
+        - isRemote
+        - employmentType
+        - descriptionSummary
+        - requiredSkills
+        - accommodationCategories
+        - accommodationsOffered
+        - accommodationDetails
+        - postedAtIso
+        - isDemoData
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        organization:
+          type: string
+        location:
+          type: string
+        isRemote:
+          type: boolean
+        employmentType:
+          $ref: '#/components/schemas/EmploymentType'
+        descriptionSummary:
+          type: string
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        accommodationCategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccommodationCategory'
+        accommodationsOffered:
+          type: array
+          items:
+            type: string
+          description: >
+            Human-readable list of specific accommodations offered. Matches
+            frontend type (string[]). Never includes applicant data.
+        accommodationDetails:
+          $ref: '#/components/schemas/EmployerAccommodationDetails'
+        applicationDeadline:
+          type: string
+          format: date
+        postedAtIso:
+          type: string
+          format: date-time
+        isDemoData:
+          type: boolean
+          description: True when the posting is seeded demo / sample data.
+      example:
+        id: job_01HXYZ456
+        title: Customer Support Specialist
+        organization: Sunrise Staffing
+        location: Addis Ababa, Ethiopia
+        isRemote: false
+        employmentType: full-time
+        descriptionSummary: Handle inbound customer queries via chat and phone.
+        requiredSkills: [communication, Amharic, English]
+        accommodationCategories: [mobility, hearing]
+        accommodationsOffered: true
+        accommodationDetails:
+          workEnvironmentAccessibility: Wheelchair-accessible office
+          remoteOrFlexibleArrangements: Flexible start times available
+          assistiveTechnologyAvailable: Screen-reader-compatible desktop
+          communicationOptions: Written instructions on request
+          interviewAccommodations: Remote interview available
+          applicationProcessAccommodations: Extended deadline on request
+          additionalSupportOffered: Job coach introduction available
+        applicationDeadline: '2026-12-31'
+        postedAtIso: '2026-11-01T08:00:00Z'
+        isDemoData: false
+
+    EmployerAccommodationDetails:
+      type: object
+      description: >
+        Structured accommodation information provided by the employer. Shown to
+        applicants on the public job board. Must not include any personal
+        applicant data.
+      properties:
+        workEnvironmentAccessibility:
+          type: string
+        remoteOrFlexibleArrangements:
+          type: string
+        assistiveTechnologyAvailable:
+          type: string
+        communicationOptions:
+          type: string
+        interviewAccommodations:
+          type: string
+        applicationProcessAccommodations:
+          type: string
+        additionalSupportOffered:
+          type: string
+
+    CreateJobRequest:
+      type: object
+      required:
+        - title
+        - location
+        - isRemote
+        - employmentType
+        - descriptionSummary
+        - requiredSkills
+        - accommodationCategories
+        - accommodationsOffered
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        location:
+          type: string
+        isRemote:
+          type: boolean
+        employmentType:
+          $ref: '#/components/schemas/EmploymentType'
+        descriptionSummary:
+          type: string
+          maxLength: 2000
+        requiredSkills:
+          type: array
+          items:
+            type: string
+        accommodationCategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccommodationCategory'
+        accommodationsOffered:
+          type: array
+          items:
+            type: string
+          description: >
+            Human-readable list of specific accommodations offered. Matches
+            frontend type (string[]). Never includes applicant data.
+        accommodationDetails:
+          $ref: '#/components/schemas/EmployerAccommodationDetails'
+        applicationDeadline:
+          type: string
+          format: date
+
+    JobApplicationDraft:
+      type: object
+      required:
+        - jobId
+        - applicantName
+        - contactValue
+        - explicitConsentToShare
+      description: >
+        Job application submitted by a learner. `shareAccommodationRequest`
+        requires `explicitConsentToShare: true`. Accommodation details are
+        **not forwarded** to the employer without consent.
+      properties:
+        jobId:
+          type: string
+        applicantName:
+          type: string
+        contactValue:
+          type: string
+        relevantExperience:
+          type: string
+        shareAccommodationRequest:
+          type: boolean
+          default: false
+        accommodationRequestNote:
+          type: string
+          description: >
+            Accommodation note shared **only** when `shareAccommodationRequest`
+            is true AND `explicitConsentToShare` is true.
+        explicitConsentToShare:
+          type: boolean
+          description: >
+            Must be true before any accommodation detail is disclosed to the
+            employer. Required field â€” cannot be omitted.
+
+    SubmissionReceipt:
+      type: object
+      required:
+        - id
+        - submittedAtIso
+        - mode
+        - persistedToServer
+        - notice
+      properties:
+        id:
+          type: string
+        submittedAtIso:
+          type: string
+          format: date-time
+
+    # ── Support Request (private — learner/case-worker only) ────────────────────
+    SupportRequest:
+      type: object
+      required:
+        - supportPreferences
+        - submittedAtIso
+      description: >
+        A private support request submitted by a learner. This resource is
+        **never accessible to employers** via any API path. Access is limited
+        to the submitting learner (via session token) and org-level
+        support_worker/org_admin roles. Retention period is configurable per
+        organization (default: 90 days after case closure). Learners may
+        request deletion at any time.
+
+        **Why not just a boolean:** A boolean `hasSupportRequest` flag on the
+        submission record is insufficient for the actual support workflow.
+        Support workers need to know what kind of assistance was requested so
+        they can assign appropriate resources. This schema captures that
+        without exposing the data to employers.
+      properties:
+        supportRequestId:
+          type: string
+        sessionId:
+          type: string
+        organizationId:
+          type: string
+          description: Scoped — only the org that received the submission can access.
+        supportPreferences:
+          type: array
+          items:
+            type: string
+            enum:
+              - help_completing
+              - communication_assistance
+              - alternative_materials
+              - flexible_scheduling
+              - other_support
+              - discuss_privately
+          description: >
+            Self-selected support categories. Stored server-side, never
+            exposed to employers, never stored as a diagnosis or medical label.
+        supportNotes:
+          type: string
+          description: >
+            Free-text notes from the learner or an assisting support worker.
+            Encrypted at rest (AES-256-GCM). Access: session-owner or
+            support_worker/org_admin only. Never returned in job-search,
+            application, or employer API responses.
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        assignedTo:
+          type: string
+          description: memberId of the support_worker assigned to this request (internal).
+        retentionExpiresAtIso:
+          type: string
+          format: date-time
+          description: >
+            Date after which the record will be purged per the org's data
+            retention policy. Learner can request earlier deletion.
+        createdAtIso:
+          type: string
+          format: date-time
+        updatedAtIso:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [mock, real]
+        persistedToServer:
+          type: boolean
+        notice:
+          type: string
+          description: Human-readable confirmation message shown to the user.
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+        code:
+          type: string
+          description: Machine-readable error code.
+        details:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+          description: Per-field validation errors (present on 400 responses).
+
+    Capabilities:
+      type: object
+      required:
+        - serverDraftsEnabled
+        - smsResumeEnabled
+      properties:
+        serverDraftsEnabled:
+          type: boolean
+        smsResumeEnabled:
+          type: boolean
+
+    WidgetConfig:
+      type: object
+      required:
+        - organizationName
+        - primaryColor
+        - enableSmsResume
+        - enablePartnerReferral
+        - jobBoardEnabled
+        - supportedLanguages
+        - defaultLanguage
+      properties:
+        organizationName:
+          type: string
+        primaryColor:
+          type: string
+          description: CSS hex colour.
+        logoUrl:
+          type: string
+          format: uri
+        welcomeMessage:
+          type: string
+        enableSmsResume:
+          type: boolean
+        enablePartnerReferral:
+          type: boolean
+        jobBoardEnabled:
+          type: boolean
+        supportedLanguages:
+          type: array
+          items:
+            type: string
+            description: BCP 47 language tag.
+        defaultLanguage:
+          type: string
+          description: BCP 47 language tag.
+
+    AuthTokenPair:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - expiresInSeconds
+        - scope
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresInSeconds:
+          type: integer
+        scope:
+          $ref: '#/components/schemas/OrgRole'
+        organizationId:
+          type: string
+        memberId:
+          type: string
+
+    OrgMember:
+      type: object
+      required:
+        - memberId
+        - email
+        - role
+        - isActive
+        - joinedAtIso
+      properties:
+        memberId:
+          type: string
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        role:
+          $ref: '#/components/schemas/OrgRole'
+        isActive:
+          type: boolean
+        joinedAtIso:
+          type: string
+          format: date-time
+
+    OrgConfig:
+      type: object
+      description: >
+        Organisation-level platform configuration. Scoped to the authenticated
+        principal's `organizationId`.
+      properties:
+        organizationName:
+          type: string
+        primaryColor:
+          type: string
+        logoUrl:
+          type: string
+          format: uri
+        welcomeMessage:
+          type: string
+        enableSmsResume:
+          type: boolean
+        enablePartnerReferral:
+          type: boolean
+        jobBoardEnabled:
+          type: boolean
+        serverDraftsEnabled:
+          type: boolean
+        supportedLanguages:
+          type: array
+          items:
+            type: string
+        defaultLanguage:
+          type: string
+        allowedRegistrationModes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationMode'
+
+    CredentialSummary:
+      type: object
+      required:
+        - credentialId
+        - label
+        - createdAtIso
+      description: API key metadata. The plaintext key is never returned after creation.
+      properties:
+        credentialId:
+          type: string
+        label:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        lastUsedAtIso:
+          type: string
+          format: date-time
+        createdAtIso:
+          type: string
+          format: date-time
+
+    LearnerApplicationRecord:
+      type: object
+      required:
+        - applicationId
+        - jobId
+        - applicantName
+        - status
+        - submittedAtIso
+      description: >
+        The learner's own view of their application. Does **not** include
+        internal support notes, employer review notes, or private filters.
+      properties:
+        applicationId:
+          type: string
+        jobId:
+          type: string
+        applicantName:
+          type: string
+        contactValue:
+          type: string
+        relevantExperience:
+          type: string
+        shareAccommodationRequest:
+          type: boolean
+        explicitConsentToShare:
+          type: boolean
+        status:
+          type: string
+          enum: [submitted, reviewing, shortlisted, rejected]
+        submittedAtIso:
+          type: string
+          format: date-time
+
+    # ── Support Request (private — learner/case-worker only) ────────────────────
+    SupportRequest:
+      type: object
+      required:
+        - supportPreferences
+        - submittedAtIso
+      description: >
+        A private support request submitted by a learner. This resource is
+        **never accessible to employers** via any API path. Access is limited
+        to the submitting learner (via session token) and org-level
+        support_worker/org_admin roles. Retention period is configurable per
+        organization (default: 90 days after case closure). Learners may
+        request deletion at any time.
+
+        **Why not just a boolean:** A boolean `hasSupportRequest` flag on the
+        submission record is insufficient for the actual support workflow.
+        Support workers need to know what kind of assistance was requested so
+        they can assign appropriate resources. This schema captures that
+        without exposing the data to employers.
+      properties:
+        supportRequestId:
+          type: string
+        sessionId:
+          type: string
+        organizationId:
+          type: string
+          description: Scoped — only the org that received the submission can access.
+        supportPreferences:
+          type: array
+          items:
+            type: string
+            enum:
+              - help_completing
+              - communication_assistance
+              - alternative_materials
+              - flexible_scheduling
+              - other_support
+              - discuss_privately
+          description: >
+            Self-selected support categories. Stored server-side, never
+            exposed to employers, never stored as a diagnosis or medical label.
+        supportNotes:
+          type: string
+          description: >
+            Free-text notes from the learner or an assisting support worker.
+            Encrypted at rest (AES-256-GCM). Access: session-owner or
+            support_worker/org_admin only. Never returned in job-search,
+            application, or employer API responses.
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        assignedTo:
+          type: string
+          description: memberId of the support_worker assigned to this request (internal).
+        retentionExpiresAtIso:
+          type: string
+          format: date-time
+          description: >
+            Date after which the record will be purged per the org's data
+            retention policy. Learner can request earlier deletion.
+        createdAtIso:
+          type: string
+          format: date-time
+        updatedAtIso:
+          type: string
+          format: date-time
+
+    EmployerApplicationView:
+      type: object
+      required:
+        - applicationId
+        - jobId
+        - applicantName
+        - status
+        - submittedAtIso
+      description: >
+        Employer-safe view of a job application. `supportNotes` and private
+        filters are **never** included. `accommodationRequestNote` appears only
+        when `explicitConsentToShare` is true and `shareAccommodationRequest`
+        is true.
+      properties:
+        applicationId:
+          type: string
+        jobId:
+          type: string
+        applicantName:
+          type: string
+        contactValue:
+          type: string
+          description: Shown only after consent is confirmed.
+        relevantExperience:
+          type: string
+        shareAccommodationRequest:
+          type: boolean
+        accommodationRequestNote:
+          type: string
+          description: >
+            Present only when `shareAccommodationRequest` is true AND
+            `explicitConsentToShare` is true.
+        status:
+          type: string
+          enum: [new, reviewing, shortlisted, rejected]
+        employerNotes:
+          type: string
+          description: Employer-internal notes â€” not surfaced to learner.
+        submittedAtIso:
+          type: string
+          format: date-time
+
+    # ── Support Request (private — learner/case-worker only) ────────────────────
+    SupportRequest:
+      type: object
+      required:
+        - supportPreferences
+        - submittedAtIso
+      description: >
+        A private support request submitted by a learner. This resource is
+        **never accessible to employers** via any API path. Access is limited
+        to the submitting learner (via session token) and org-level
+        support_worker/org_admin roles. Retention period is configurable per
+        organization (default: 90 days after case closure). Learners may
+        request deletion at any time.
+
+        **Why not just a boolean:** A boolean `hasSupportRequest` flag on the
+        submission record is insufficient for the actual support workflow.
+        Support workers need to know what kind of assistance was requested so
+        they can assign appropriate resources. This schema captures that
+        without exposing the data to employers.
+      properties:
+        supportRequestId:
+          type: string
+        sessionId:
+          type: string
+        organizationId:
+          type: string
+          description: Scoped — only the org that received the submission can access.
+        supportPreferences:
+          type: array
+          items:
+            type: string
+            enum:
+              - help_completing
+              - communication_assistance
+              - alternative_materials
+              - flexible_scheduling
+              - other_support
+              - discuss_privately
+          description: >
+            Self-selected support categories. Stored server-side, never
+            exposed to employers, never stored as a diagnosis or medical label.
+        supportNotes:
+          type: string
+          description: >
+            Free-text notes from the learner or an assisting support worker.
+            Encrypted at rest (AES-256-GCM). Access: session-owner or
+            support_worker/org_admin only. Never returned in job-search,
+            application, or employer API responses.
+        status:
+          type: string
+          enum: [open, in_progress, resolved, closed]
+        assignedTo:
+          type: string
+          description: memberId of the support_worker assigned to this request (internal).
+        retentionExpiresAtIso:
+          type: string
+          format: date-time
+          description: >
+            Date after which the record will be purged per the org's data
+            retention policy. Learner can request earlier deletion.
+        createdAtIso:
+          type: string
+          format: date-time
+        updatedAtIso:
+          type: string
+          format: date-time
+
