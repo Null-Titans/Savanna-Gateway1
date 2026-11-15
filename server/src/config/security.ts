@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+﻿import type { Request, Response } from 'express';
 import helmet from 'helmet';
 import cors, { type CorsOptions } from 'cors';
 import rateLimit, { type RateLimitRequestHandler } from 'express-rate-limit';
@@ -26,10 +26,16 @@ export const helmetMiddleware = helmet({
  */
 function resolveCorsOrigins(): string[] | boolean {
   const configured = env.CORS_ORIGIN.trim();
+
+  // Never allow wildcard origins in production.
   if (configured === '*') {
-    return true;
+    return env.NODE_ENV === 'production' ? false : true;
   }
-  return configured.split(',').map((origin) => origin.trim()).filter(Boolean);
+
+  return configured
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 }
 
 export const corsOptions: CorsOptions = {
@@ -41,10 +47,12 @@ export const corsOptions: CorsOptions = {
     'X-Requested-With',
     'X-Request-Id',
     'X-Api-Key',
+  'X-Organization-ID',
+  'X-Tenant-ID',
     'Accept',
   ],
   exposedHeaders: ['X-Request-Id', 'Retry-After', 'Content-Length'],
-  credentials: true,
+  credentials: false,
   maxAge: 86400, // 24 hours preflight cache
 };
 
@@ -103,3 +111,4 @@ export const submissionLimiter: RateLimitRequestHandler = rateLimit({
   handler: rateLimitHandler,
   skip: () => env.NODE_ENV === 'test',
 });
+

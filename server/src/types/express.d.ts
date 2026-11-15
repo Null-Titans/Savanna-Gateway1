@@ -1,9 +1,10 @@
-export type UserRole =
+﻿export type UserRole =
   | 'PLATFORM_ADMIN'
   | 'ORGANIZATION_ADMIN'
   | 'ORGANIZATION_MEMBER'
   | 'EMPLOYER'
-  | 'PARTNER';
+  | 'PARTNER'
+  | 'LEARNER';
 
 export interface AuthenticatedUser {
   id: string;
@@ -59,3 +60,4 @@ declare global {
 }
 
 export {};
+

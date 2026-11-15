@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+﻿import type { Request, Response, NextFunction } from 'express';
 import { JobService } from './job.service.js';
 import { sendSuccess } from '../../shared/utils/response.js';
 import { ValidationError } from '../../shared/errors/index.js';
@@ -111,6 +111,7 @@ export class JobController {
       const receipt = await JobService.submitApplication({
         ...req.body,
         jobId,
+        applicantUserId: req.user?.id,
       });
 
       // Dual compatibility payload
@@ -142,7 +143,7 @@ export class JobController {
         throw new ValidationError('applicationId is required');
       }
 
-      const app = await JobService.getApplicationById(applicationId);
+      const app = await JobService.getApplicationById(applicationId, req.user!.id);
       sendSuccess(res, app);
     } catch (err) {
       next(err);
@@ -164,10 +165,11 @@ export class JobController {
         throw new ValidationError('jobId is required');
       }
 
-      const apps = await JobService.getEmployerApplications(jobId);
+      const apps = await JobService.getEmployerApplications(jobId, { id: req.user!.id, organizationId: req.user!.organizationId, role: req.user!.role });
       sendSuccess(res, apps, { total: apps.length });
     } catch (err) {
       next(err);
     }
   }
 }
+

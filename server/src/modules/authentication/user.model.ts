@@ -1,4 +1,4 @@
-import mongoose, { Schema, type Document, type Model } from 'mongoose';
+﻿import mongoose, { Schema, type Document, type Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import type { UserRole } from '../../types/express.js';
 
@@ -63,6 +63,7 @@ const UserSchema = new Schema<IUser, IUserModel>(
         'ORGANIZATION_MEMBER',
         'EMPLOYER',
         'PARTNER',
+        'LEARNER',
       ],
       default: 'ORGANIZATION_MEMBER',
       index: true,
@@ -129,3 +130,4 @@ UserSchema.statics.hashPassword = async function (password: string): Promise<str
 };
 
 export const User = mongoose.model<IUser, IUserModel>('User', UserSchema);
+

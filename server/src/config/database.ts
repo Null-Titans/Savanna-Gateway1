@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import { env } from './env.js';
 import { logger } from '../shared/logger.js';
 
@@ -71,7 +71,7 @@ class DatabaseManager {
   }
 
   private async connectWithRetry(): Promise<void> {
-    const uri = env.MONGODB_URI;
+    const uri = process.env.MONGODB_URI || env.MONGODB_URI;
 
     try {
       logger.info(`Attempting MongoDB connection (attempt ${this.retryCount + 1}/${this.maxRetries})...`);
@@ -166,3 +166,4 @@ export const db = new DatabaseManager();
 export const connectDatabase = (): Promise<void> => db.connect();
 export const disconnectDatabase = (): Promise<void> => db.disconnect();
 export const getDatabaseHealth = (): Promise<DatabaseHealth> => db.getHealth();
+

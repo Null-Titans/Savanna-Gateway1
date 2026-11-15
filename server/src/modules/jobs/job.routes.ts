@@ -1,10 +1,11 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { z } from 'zod';
 import { JobController } from './job.controller.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
-import { optionalAuthenticate, authenticate } from '../../middleware/authenticate.js';
+import { authenticate, optionalAuthenticate } from '../../middleware/authenticate.js';
 import { requireRole } from '../../middleware/authorize.js';
-import { tenantContextMiddleware } from '../../middleware/tenantContext.js';
+import { requirePermission } from '../../shared/security/permissions.js';
+import { tenantContextMiddleware, requireTenant } from '../../middleware/tenantContext.js';
 
 export const jobRouter = Router();
 export const applicationRouter = Router();
@@ -52,29 +53,40 @@ const submitAppSchema = {
 jobRouter.get('/', JobController.listJobs);
 jobRouter.get('/:jobId', JobController.getJob);
 
-// 2. Job Creation (Supports employer JWT or legacy post)
+// 2. Job Creation (authenticated and permission-protected)
 jobRouter.post(
   '/',
-  optionalAuthenticate,
+  authenticate,
+  requirePermission('jobs:create'),
   tenantContextMiddleware,
+  requireTenant,
   validateRequest(createJobSchema),
   JobController.createJob
 );
-
 // 3. Submit application for a job
 jobRouter.post(
   '/:jobId/applications',
+  optionalAuthenticate,
   validateRequest(submitAppSchema),
   JobController.submitApplication
 );
 
-// 4. Employer application review (requires employer/admin role)
+// 4. Employer application review (authenticated and tenant-scoped)
 jobRouter.get(
   '/:jobId/applications',
   authenticate,
   requireRole(['PLATFORM_ADMIN', 'ORGANIZATION_ADMIN', 'EMPLOYER']),
+  requirePermission('applications:read'),
+  tenantContextMiddleware,
+  requireTenant,
   JobController.getEmployerApplications
 );
 
-// 5. Application Lookup (Learner status check)
-applicationRouter.get('/:applicationId', JobController.getApplication);
+// 5. Private application status lookup
+applicationRouter.get(
+  '/:applicationId',
+  authenticate,
+  requirePermission('applications:read'),
+  JobController.getApplication
+);
+

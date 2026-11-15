@@ -1,4 +1,4 @@
-import express, { type Express, type Request } from 'express';
+﻿import express, { type Express, type Request } from 'express';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
@@ -25,6 +25,20 @@ export function createApp(): Express {
   app.use(
     pinoHttp({
       logger,
+      redact: {
+        paths: [
+          'req.headers.authorization',
+          'req.headers.cookie',
+          'req.headers.x-api-key',
+          'req.body.password',
+          'req.body.token',
+          'req.body.refreshToken',
+          'req.body.accessToken',
+          'req.body.accommodationRequestNote',
+          'res.headers.set-cookie',
+        ],
+        censor: '[REDACTED]',
+      },
       genReqId: (req: IncomingMessage) =>
         (req as unknown as Request).id ??
         (req.headers['x-request-id'] as string) ??
@@ -48,8 +62,8 @@ export function createApp(): Express {
   app.use(standardLimiter);
 
   // 5. Body Parsing
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   // 6. Direct Root Health Check Endpoint
   app.use('/health', healthRouter);
@@ -70,3 +84,4 @@ export function createApp(): Express {
 }
 
 export const app = createApp();
+

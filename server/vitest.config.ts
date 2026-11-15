@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    testTimeout: 10000,
+    testTimeout: 30000,
+    // Run setup to start in‑memory MongoDB for integration tests
+    setupFiles: ['./tests/setup.ts'],
   },
 });

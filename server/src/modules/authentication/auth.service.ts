@@ -1,4 +1,4 @@
-import jwt, { type SignOptions } from 'jsonwebtoken';
+﻿import jwt, { type SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
 import { env } from '../../config/env.js';
@@ -151,9 +151,7 @@ export class AuthService {
   }
 
   /**
-   * Performs atomic refresh token rotation:
-   * Detects token reuse (family revocation attack mitigation),
-   * revokes the consumed token, and issues a fresh rotated token pair.
+   * Performs atomic refresh token rotation with reuse detection and family revocation.
    */
   public static async refreshTokens(rawRefreshToken: string): Promise<AuthTokens> {
     if (!rawRefreshToken || typeof rawRefreshToken !== 'string') {
@@ -161,45 +159,49 @@ export class AuthService {
     }
 
     const tokenHash = hashSha256(rawRefreshToken);
-    const existingToken = await RefreshToken.findByTokenHash(tokenHash);
+    const now = new Date();
+
+    // Atomically claim the token. Only one request can rotate it.
+    const existingToken = await RefreshToken.findOneAndUpdate(
+      { tokenHash, isRevoked: false, expiresAt: { $gt: now } },
+      { $set: { isRevoked: true, revocationReason: 'ROTATED' } },
+      { new: false }
+    ).exec();
 
     if (!existingToken) {
+      const previousToken = await RefreshToken.findByTokenHash(tokenHash);
+
+      if (!previousToken) {
+        throw new UnauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+      }
+
+      if (previousToken.expiresAt <= now) {
+        throw new UnauthorizedError('Refresh token has expired. Please sign in again.', 'REFRESH_TOKEN_EXPIRED');
+      }
+
+      if (previousToken.revocationReason === 'LOGOUT') {
+        throw new UnauthorizedError('Refresh token is no longer valid', 'INVALID_REFRESH_TOKEN');
+      }
+
+      if (previousToken.revocationReason === 'ROTATED' || previousToken.revocationReason === 'REUSE') {
+        await RefreshToken.revokeFamily(previousToken.family, 'REUSE');
+        throw new ForbiddenError(
+          'Suspicious refresh token activity detected. All active sessions have been terminated for security.',
+          'TOKEN_REUSE_DETECTED'
+        );
+      }
+
       throw new UnauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN');
-    }
-
-    // Token Reuse Detection:
-    // If a revoked token is presented, compromise is assumed: revoke all tokens in this family
-    if (existingToken.isRevoked) {
-      await RefreshToken.revokeFamily(existingToken.family);
-      throw new ForbiddenError(
-        'Suspicious refresh token activity detected. All active sessions have been terminated for security.',
-        'TOKEN_REUSE_DETECTED'
-      );
-    }
-
-    // Expiration check
-    if (existingToken.expiresAt < new Date()) {
-      existingToken.isRevoked = true;
-      await existingToken.save();
-      throw new UnauthorizedError('Refresh token has expired. Please sign in again.', 'REFRESH_TOKEN_EXPIRED');
     }
 
     const user = await User.findById(existingToken.userId);
     if (!user || user.status !== 'active') {
-      existingToken.isRevoked = true;
-      await existingToken.save();
       throw new UnauthorizedError('User account associated with this token is inactive', 'USER_INACTIVE');
     }
 
-    // Mark current refresh token as consumed/revoked
     const newRefreshToken = generateSecureToken(40);
     const newTokenHash = hashSha256(newRefreshToken);
 
-    existingToken.isRevoked = true;
-    existingToken.replacedByTokenHash = newTokenHash;
-    await existingToken.save();
-
-    // Create successor refresh token in the same family
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
 
@@ -212,16 +214,24 @@ export class AuthService {
       expiresAt,
     });
 
-    const accessToken = this.generateAccessToken(user);
+    // Close the race where replay detection revokes the family
+    // before this successor token is inserted.
+    const reuseDetected = await RefreshToken.exists({
+      family: existingToken.family,
+      revocationReason: 'REUSE',
+    });
+
+    if (reuseDetected) {
+      await RefreshToken.revokeFamily(existingToken.family, 'REUSE');
+    }
 
     return {
-      accessToken,
+      accessToken: this.generateAccessToken(user),
       refreshToken: newRefreshToken,
       expiresIn: ACCESS_TOKEN_EXPIRY_SECONDS,
       tokenType: 'Bearer',
     };
   }
-
   /**
    * Explicitly revokes a refresh token session upon logout
    */
@@ -343,3 +353,6 @@ export class AuthService {
     }
   }
 }
+
+
+

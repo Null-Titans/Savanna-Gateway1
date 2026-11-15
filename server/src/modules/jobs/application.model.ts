@@ -1,10 +1,12 @@
-import mongoose, { Schema, type Document, type Model } from 'mongoose';
+﻿import mongoose, { Schema, type Document, type Model } from 'mongoose';
+import { decrypt } from '../../shared/utils/crypto.js';
 
 export type ApplicationStatus = 'submitted' | 'in_review' | 'shortlisted' | 'rejected';
 
 export interface IApplication extends Document {
   id: string;
   jobId: mongoose.Types.ObjectId;
+  applicantUserId?: mongoose.Types.ObjectId;
   applicantName: string;
   contactValue: string;
   relevantExperience: string;
@@ -30,6 +32,11 @@ const ApplicationSchema = new Schema<IApplication>(
       type: Schema.Types.ObjectId,
       ref: 'JobListing',
       required: true,
+      index: true,
+    },
+    applicantUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
       index: true,
     },
     applicantName: {
@@ -105,9 +112,12 @@ ApplicationSchema.methods.toEmployerSafeView = function (): Record<string, unkno
     relevantExperience: this.relevantExperience,
     status: this.status,
     submittedAtIso: this.submittedAtIso,
-    hasAccommodationRequest: Boolean(this.shareAccommodationRequest),
-    accommodationRequestNote: canShare ? this.accommodationRequestNote : undefined,
-    explicitConsentToShare: this.explicitConsentToShare,
+    hasAccommodationRequest: canShare,
+    accommodationRequestNote: canShare
+      ? (this.accommodationRequestNote.startsWith('v1:')
+          ? decrypt(this.accommodationRequestNote)
+          : this.accommodationRequestNote)
+      : undefined,
   };
 };
 
@@ -119,7 +129,11 @@ ApplicationSchema.methods.toLearnerView = function (): Record<string, unknown> {
     contactValue: this.contactValue,
     relevantExperience: this.relevantExperience,
     shareAccommodationRequest: this.shareAccommodationRequest,
-    accommodationRequestNote: this.accommodationRequestNote,
+    accommodationRequestNote: this.accommodationRequestNote
+      ? (this.accommodationRequestNote.startsWith('v1:')
+          ? decrypt(this.accommodationRequestNote)
+          : this.accommodationRequestNote)
+      : '',
     explicitConsentToShare: this.explicitConsentToShare,
     status: this.status,
     submittedAtIso: this.submittedAtIso,
@@ -130,3 +144,6 @@ export const Application: Model<IApplication> = mongoose.model<IApplication>(
   'Application',
   ApplicationSchema
 );
+
+
+

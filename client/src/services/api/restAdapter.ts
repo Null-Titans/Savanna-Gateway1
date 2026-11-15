@@ -1,4 +1,4 @@
-import {
+﻿import {
   AccommodationCategory,
   ApiCapabilities,
   JobApplicationDraft,
@@ -72,6 +72,7 @@ export function createRestAdapter(baseUrl: string) {
       if (categories && categories.length > 0) {
         params.set('accommodations', categories.join(','));
       }
+      params.set('format', 'array');
       const qs = params.toString();
       return requestJson<JobPosting[]>(baseUrl, `/api/v1/jobs${qs ? `?${qs}` : ''}`);
     },
@@ -107,3 +108,4 @@ export function createRestAdapter(baseUrl: string) {
     },
   };
 }
+

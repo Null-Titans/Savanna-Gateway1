@@ -1,8 +1,9 @@
-import mongoose from 'mongoose';
+﻿import mongoose from 'mongoose';
 import { JobListing, type IEmployerAccommodationDetails } from './job.model.js';
 import { Application } from './application.model.js';
-import { NotFoundError, ValidationError } from '../../shared/errors/index.js';
+import { NotFoundError, ValidationError, ForbiddenError } from '../../shared/errors/index.js';
 import type { SubmissionReceipt } from '../onboarding/onboarding.service.js';
+import { encrypt } from '../../shared/utils/crypto.js';
 
 const PROHIBITED_MEDICAL_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /\b(diagnosis|diagnoses|diagnosed)\b/i, label: 'diagnosis' },
@@ -67,6 +68,7 @@ export interface CreateJobInput {
 
 export interface SubmitApplicationInput {
   jobId: string;
+  applicantUserId?: string;
   applicantName: string;
   contactValue: string;
   relevantExperience?: string;
@@ -142,7 +144,7 @@ export class JobService {
       throw new NotFoundError(`Job listing '${jobId}' not found`);
     }
 
-    const job = await JobListing.findById(jobId).exec();
+    const job = await JobListing.findOne({ _id: jobId, status: 'published' }).exec();
     if (!job) {
       throw new NotFoundError(`Job listing '${jobId}' not found`);
     }
@@ -208,13 +210,28 @@ export class JobService {
       throw new NotFoundError('Target job listing not found');
     }
 
+    if (job.status !== 'published') {
+      throw new ValidationError('Applications are not open for this job');
+    }
+
+    if (job.applicationDeadline) {
+      const deadline = Date.parse(job.applicationDeadline);
+      if (!Number.isFinite(deadline)) {
+        throw new ValidationError('The job application deadline is invalid');
+      }
+      if (Date.now() > deadline) {
+        throw new ValidationError('The application deadline has passed');
+      }
+    }
+
     const application = new Application({
       jobId: job._id,
+      applicantUserId: input.applicantUserId && mongoose.Types.ObjectId.isValid(input.applicantUserId) ? new mongoose.Types.ObjectId(input.applicantUserId) : undefined,
       applicantName: input.applicantName.trim(),
       contactValue: input.contactValue.trim(),
       relevantExperience: input.relevantExperience?.trim() ?? '',
       shareAccommodationRequest: Boolean(input.shareAccommodationRequest),
-      accommodationRequestNote: input.accommodationRequestNote?.trim() ?? '',
+      accommodationRequestNote: input.accommodationRequestNote?.trim() ? encrypt(input.accommodationRequestNote.trim()) : '',
       explicitConsentToShare: Boolean(input.explicitConsentToShare),
       status: 'submitted',
       statusHistory: [{ status: 'submitted', changedAt: new Date() }],
@@ -235,12 +252,12 @@ export class JobService {
   /**
    * Retrieves an application by ID (learner view)
    */
-  public static async getApplicationById(applicationId: string): Promise<Record<string, unknown>> {
+  public static async getApplicationById(applicationId: string, userId: string): Promise<Record<string, unknown>> {
     if (!mongoose.Types.ObjectId.isValid(applicationId)) {
       throw new NotFoundError('Application not found');
     }
 
-    const app = await Application.findById(applicationId).exec();
+    const app = await Application.findOne({ _id: applicationId, applicantUserId: userId }).exec();
     if (!app) {
       throw new NotFoundError('Application not found');
     }
@@ -251,9 +268,20 @@ export class JobService {
   /**
    * Retrieves applications for employer review (strictly privacy-segregated view)
    */
-  public static async getEmployerApplications(jobId: string): Promise<Record<string, unknown>[]> {
+  public static async getEmployerApplications(jobId: string, user: { id: string; organizationId?: string; role: string }): Promise<Record<string, unknown>[]> {
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
       throw new NotFoundError('Job listing not found');
+    }
+
+    const job = await JobListing.findById(jobId).exec();
+    if (!job) throw new NotFoundError('Job listing not found');
+
+    const isPlatformAdmin = user.role === 'PLATFORM_ADMIN';
+    const sameOrganization = Boolean(job.organizationId && user.organizationId && job.organizationId.toString() === user.organizationId);
+    const sameEmployer = Boolean(job.employerId && job.employerId.toString() === user.id);
+
+    if (!isPlatformAdmin && !sameOrganization && !sameEmployer) {
+      throw new ForbiddenError('You cannot access applications for this job');
     }
 
     const apps = await Application.find({ jobId: new mongoose.Types.ObjectId(jobId) })
@@ -263,3 +291,5 @@ export class JobService {
     return apps.map((app) => app.toEmployerSafeView());
   }
 }
+
+

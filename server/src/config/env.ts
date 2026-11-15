@@ -3,10 +3,7 @@ import { z } from 'zod';
 
 // Load environment variables from .env file if available
 dotenv.config();
-console.log(
-  'MongoDB URI loaded:',
-  process.env.MONGODB_URI?.startsWith('mongodb+srv://')
-);
+
 
 const isProduction = process.env['NODE_ENV'] === 'production';
 

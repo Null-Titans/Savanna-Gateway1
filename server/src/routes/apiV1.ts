@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from 'express';
+﻿import { Router, type Request, type Response } from 'express';
 import { healthRouter } from './health.js';
 import { authRouter } from '../modules/authentication/auth.routes.js';
 import { organizationRouter } from '../modules/organizations/organization.routes.js';
@@ -6,6 +6,10 @@ import { onboardingRouter } from '../modules/onboarding/onboarding.routes.js';
 import { jobRouter, applicationRouter } from '../modules/jobs/job.routes.js';
 import { speechRouter } from '../modules/speech/speech.routes.js';
 import { SpeechService } from '../modules/speech/speech.service.js';
+import { learnerRouter } from '../modules/learners/learner.routes.js';
+import { employerRouter } from '../modules/employers/employer.routes.js';
+import { partnerIntegrationRouter } from '../modules/partnerIntegrations/partnerIntegration.routes.js';
+import { accommodationRouter } from '../modules/accommodations/accommodation.routes.js';
 import { Organization } from '../modules/organizations/organization.model.js';
 import { hashSha256 } from '../shared/utils/crypto.js';
 
@@ -67,7 +71,7 @@ apiV1Router.get('/widget/:widgetKey/config', async (req: Request, res: Response)
       organizationName: orgName,
       primaryColor,
       logoUrl,
-      welcomeMessage: `Welcome to ${orgName} — let's get you started.`,
+      welcomeMessage: `Welcome to ${orgName} â€” let's get you started.`,
       enableSmsResume: true,
       enablePartnerReferral: true,
       jobBoardEnabled: true,
@@ -112,6 +116,11 @@ apiV1Router.use('/org', organizationRouter);
 // 8. Speech Integration Boundary (/api/v1/speech/*)
 apiV1Router.use('/speech', speechRouter);
 
+apiV1Router.use('/learners', learnerRouter);
+apiV1Router.use('/employers', employerRouter);
+apiV1Router.use('/partner-integrations', partnerIntegrationRouter);
+apiV1Router.use('/accommodations', accommodationRouter);
+
 // 9. API Discovery Root (/api/v1)
 apiV1Router.get('/', (_req: Request, res: Response) => {
   const discovery = {
@@ -142,3 +151,6 @@ apiV1Router.get('/', (_req: Request, res: Response) => {
     },
   });
 });
+
+
+

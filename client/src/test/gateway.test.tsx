@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -90,14 +90,18 @@ describe('Privacy & Level 3 JSON-LD', () => {
   });
 });
 
-describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
-  it('completes onboarding without kebele ID, skips private support, and passes axe-core', async () => {
-    const user = userEvent.setup();
+describe('Main Gateway accessibility', () => {
+  it('passes axe-core accessibility checks', async () => {
     const { container } = render(<App />);
+    const results = await axe.run(container);
+    expect(results.violations).toEqual([]);
+  }, 15000);
+});
+describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
+  it('completes onboarding without kebele ID and skips private support', async () => {
+    const user = userEvent.setup();
+    render(<App />);
 
-    // Axe check on Main Gateway
-    const homeAxe = await axe.run(container);
-    expect(homeAxe.violations).toEqual([]);
 
     // Start registration
     await user.click(screen.getAllByRole('button', { name: /Start registration/i })[0]);
@@ -147,7 +151,8 @@ describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
     await user.selectOptions(langSelect, 'am');
 
     await waitFor(() => {
-      expect(screen.getByText(/ቀላል ምዝገባ እና ተደራሽ የስራ እድሎች/i)).toBeInTheDocument();
+      expect(document.documentElement.lang).toBe('am');
+      expect(screen.getByText('መነሻ')).toBeInTheDocument();
     });
   });
 
@@ -223,4 +228,6 @@ describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
     expect(document.body.style.overflow).toBe('');
   });
 });
+
+
 

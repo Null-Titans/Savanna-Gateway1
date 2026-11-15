@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+﻿import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
 import {
   OnboardingSession,
@@ -299,15 +299,52 @@ export class OnboardingService {
     const receiptId = `sub_${uuidv4().replace(/-/g, '').slice(0, 16)}`;
     const submittedAt = new Date();
 
-    // 1. Store private support needs securely walled off
-    if (draft.supportNotes || (draft.supportPreferences && draft.supportPreferences.length > 0)) {
+    const sessionId = receiptId;
+    const expiresAt = new Date(submittedAt);
+    expiresAt.setHours(expiresAt.getHours() + SESSION_TTL_HOURS);
+
+    const hasSupportRequest =
+      Boolean(draft.supportNotes?.trim()) ||
+      Boolean(draft.supportPreferences?.length);
+
+    await OnboardingSession.create({
+      sessionId,
+      draftTokenHash: hashSha256(generateSecureToken(24)),
+      isSharedDevice: Boolean(draft.isSharedDevice),
+      registrationMode: draft.registrationMode || 'self',
+      stepIndex: 0,
+      stepResponses: new Map(),
+      draft: {
+        ...draft,
+        partnerConsent: draft.partnerConsent
+          ? {
+              ...draft.partnerConsent,
+              recordedAtIso: draft.partnerConsent.recordedAtIso || submittedAt.toISOString(),
+            }
+          : undefined,
+        identityReferenceNumber: draft.identityReferenceNumber?.trim()
+          ? encrypt(draft.identityReferenceNumber.trim())
+          : '',
+        supportPreferences: [],
+        supportNotes: '',
+        updatedAtIso: submittedAt.toISOString(),
+      },
+      status: 'submitted',
+      submittedAt,
+      submissionReceiptId: receiptId,
+      expiresAt,
+    });
+
+    if (hasSupportRequest) {
       await PrivateSupportRequest.create({
-        sessionReference: receiptId,
-        learnerName: draft.fullName || 'Direct Applicant',
+        sessionReference: sessionId,
+        learnerName: draft.fullName || 'Anonymous Learner',
         contactMethod: draft.contactMethod,
         contactValue: draft.contactValue,
         supportPreferences: draft.supportPreferences || [],
-        encryptedNotes: encrypt(draft.supportNotes || 'Direct submission notes'),
+        encryptedNotes: encrypt(
+          draft.supportNotes || 'No specific text notes provided'
+        ),
         status: 'pending_review',
       });
     }
@@ -317,7 +354,7 @@ export class OnboardingService {
       submittedAtIso: submittedAt.toISOString(),
       mode: 'real',
       persistedToServer: true,
-      notice: 'Onboarding submission successfully received and securely persisted.',
+      notice: 'Your onboarding profile has been submitted and securely persisted.',
       clearDeviceStorage: Boolean(draft.isSharedDevice),
     };
   }
@@ -384,3 +421,5 @@ export class OnboardingService {
     };
   }
 }
+
+

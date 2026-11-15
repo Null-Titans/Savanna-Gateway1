@@ -1,4 +1,6 @@
-import mongoose, { Schema, type Document, type Model } from 'mongoose';
+﻿import mongoose, { Schema, type Document, type Model } from 'mongoose';
+
+export type RefreshTokenRevocationReason = 'ROTATED' | 'LOGOUT' | 'REUSE' | 'EXPIRED';
 
 export interface IRefreshToken extends Document {
   userId: mongoose.Types.ObjectId;
@@ -6,6 +8,7 @@ export interface IRefreshToken extends Document {
   tokenHash: string;
   family: string;
   isRevoked: boolean;
+  revocationReason?: RefreshTokenRevocationReason;
   expiresAt: Date;
   replacedByTokenHash?: string;
   createdAt: Date;
@@ -14,7 +17,10 @@ export interface IRefreshToken extends Document {
 
 export interface IRefreshTokenModel extends Model<IRefreshToken> {
   findByTokenHash(tokenHash: string): Promise<IRefreshToken | null>;
-  revokeFamily(family: string): Promise<void>;
+  revokeFamily(
+    family: string,
+    reason?: RefreshTokenRevocationReason
+  ): Promise<void>;
 }
 
 const RefreshTokenSchema = new Schema<IRefreshToken, IRefreshTokenModel>(
@@ -46,10 +52,15 @@ const RefreshTokenSchema = new Schema<IRefreshToken, IRefreshTokenModel>(
       default: false,
       index: true,
     },
+    revocationReason: {
+      type: String,
+      enum: ['ROTATED', 'LOGOUT', 'REUSE', 'EXPIRED'],
+      default: null,
+    },
     expiresAt: {
       type: Date,
       required: true,
-      index: { expires: 0 }, // MongoDB automatic TTL cleanup upon expiration
+      index: { expires: 0 },
     },
     replacedByTokenHash: {
       type: String,
@@ -69,9 +80,13 @@ RefreshTokenSchema.statics.findByTokenHash = async function (
 };
 
 RefreshTokenSchema.statics.revokeFamily = async function (
-  family: string
+  family: string,
+  reason: RefreshTokenRevocationReason = 'REUSE'
 ): Promise<void> {
-  await this.updateMany({ family }, { $set: { isRevoked: true } }).exec();
+  await this.updateMany(
+    { family },
+    { $set: { isRevoked: true, revocationReason: reason } }
+  ).exec();
 };
 
 export const RefreshToken = mongoose.model<IRefreshToken, IRefreshTokenModel>(
