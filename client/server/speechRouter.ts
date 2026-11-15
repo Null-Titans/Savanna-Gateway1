@@ -9,14 +9,18 @@ const ETHIOPIC_REGEX = /[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF]/;
 const OROMO_LEXICAL_REGEX =
   /\b(akkam|nagaa|maaloo|galatoomi|galatoomaa|eeyyee|lakkii|maqaa|gargaarsa|deeggarsa|hojiin|hojii|hojjetaa|barataa|barnoota|galmee|keessan|keessa|irraa|argachuu|barbaada|barbaadu|afaan|oromoo|oromiffa|oromiffaa|ani|ati|nuti|isaan|maal|maaliif|eessa|yoom|akkamitti|fayyaa|mijataa|gaaffii|deebii|barbaachisa|bilbila|waraqaa|eenyummaa|dhaabbata|michuu|iccitii|itti|fufi|duubatti|sirreessi|maxxansi|hayyama|dubbisi|dubbachuu|sagalee|qajeelfama|ergaa|fudhadhu|dhaabi)\b/i;
 
-function getAiClient(): GoogleGenAI | null {
+const ttsAudioCache = new Map<string, Buffer>();
+
+function getAiClient(apiVersion: 'v1beta' | 'v1alpha' = 'v1beta'): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
     return null;
   }
   return new GoogleGenAI({
     apiKey,
+    apiVersion,
     httpOptions: {
+      apiVersion,
       headers: {
         'User-Agent': 'aistudio-build',
       },
@@ -168,6 +172,7 @@ export function createSpeechRouter() {
         tts: 'gemini-3.8-flash-lite-tts',
         stt: 'gemini-3.5-transcribe',
         assistant: 'gemini-4-hydrogen',
+        live: 'gemini-3.8-live',
       },
     });
   });
@@ -208,23 +213,41 @@ export function createSpeechRouter() {
     }
 
     const { voiceName, style } = getTtsVoiceConfig(resolvedLanguage);
+    const cacheKey = `${resolvedLanguage}::${text.trim()}`;
+    const cachedWav = ttsAudioCache.get(cacheKey);
+    if (cachedWav) {
+      res.json({
+        audioBase64: cachedWav.toString('base64'),
+        mimeType: 'audio/wav',
+        language: resolvedLanguage,
+        provider: 'gemini-tts-cache',
+      });
+      return;
+    }
+
     const chunks = splitIntoSpeechChunks(text, 380);
 
-    try {
-      const wavBuffers: Buffer[] = [];
-      for (const chunk of chunks) {
-        const ttsResponse = await ai.models.generateContent({
-          model: 'gemini-3.8-flash-lite-tts',
+    const synthesizeChunk = async (chunk: string): Promise<Buffer> => {
+      const attemptWith = async (
+        model: 'gemini-3.8-flash-lite-tts' | 'gemini-3.8-flash-tts',
+        version: 'v1beta' | 'v1alpha',
+        includeSpeechMetadata: boolean
+      ): Promise<Buffer> => {
+        const client = getAiClient(version) || ai;
+        const ttsResponse = await client.models.generateContent({
+          model,
           contents: [
             {
               role: 'user',
               parts: [
-                {
-                  text: chunk,
-                  speechMetadata: {
-                    style,
-                  },
-                },
+                includeSpeechMetadata
+                  ? {
+                      text: chunk,
+                      speechMetadata: { style },
+                    }
+                  : {
+                      text: `Direction: ${style}\n\nSpeak this exact text:\n${chunk}`,
+                    },
               ],
             },
           ],
@@ -243,10 +266,56 @@ export function createSpeechRouter() {
         if (!base64Audio) {
           throw new Error('Empty audio returned by TTS model.');
         }
-        wavBuffers.push(Buffer.from(base64Audio, 'base64'));
+        return Buffer.from(base64Audio, 'base64');
+      };
+
+      const runForModel = async (
+        model: 'gemini-3.8-flash-lite-tts' | 'gemini-3.8-flash-tts'
+      ): Promise<Buffer> => {
+        try {
+          return await attemptWith(model, 'v1beta', true);
+        } catch (firstErr) {
+          const msg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+          if (msg.includes('speechMetadata') || msg.includes('INVALID_ARGUMENT') || msg.includes('NOT_FOUND')) {
+            try {
+              return await attemptWith(model, 'v1alpha', true);
+            } catch {
+              return await attemptWith(model, 'v1beta', false);
+            }
+          }
+          throw firstErr;
+        }
+      };
+
+      try {
+        return await runForModel('gemini-3.8-flash-lite-tts');
+      } catch (liteErr) {
+        const msg = liteErr instanceof Error ? liteErr.message : String(liteErr);
+        if (
+          msg.includes('429') ||
+          msg.includes('RESOURCE_EXHAUSTED') ||
+          msg.includes('503') ||
+          msg.includes('UNAVAILABLE')
+        ) {
+          return await runForModel('gemini-3.8-flash-tts');
+        }
+        throw liteErr;
+      }
+    };
+
+    try {
+      const wavBuffers: Buffer[] = [];
+      for (const chunk of chunks) {
+        wavBuffers.push(await synthesizeChunk(chunk));
       }
 
       const finalWav = concatWavBuffers(wavBuffers);
+      if (ttsAudioCache.size >= 60) {
+        const firstKey = ttsAudioCache.keys().next().value;
+        if (firstKey) ttsAudioCache.delete(firstKey);
+      }
+      ttsAudioCache.set(cacheKey, finalWav);
+
       res.json({
         audioBase64: finalWav.toString('base64'),
         mimeType: 'audio/wav',
@@ -255,9 +324,15 @@ export function createSpeechRouter() {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'TTS generation failed.';
-      res.status(502).json({
-        error: message,
-        code: 'TTS_GENERATION_FAILED',
+      const isQuota =
+        message.includes('429') ||
+        message.includes('RESOURCE_EXHAUSTED') ||
+        message.toLowerCase().includes('quota');
+      res.status(isQuota ? 429 : 502).json({
+        error: isQuota
+          ? 'Neural speech daily limit was reached on the server. Please try again shortly.'
+          : message,
+        code: isQuota ? 'TTS_QUOTA' : 'TTS_GENERATION_FAILED',
       });
     }
   });

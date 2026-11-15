@@ -50,5 +50,83 @@ The development and production Express server (`server.ts` + `server/speechRoute
 ```bash
 npm run lint        # tsc --noEmit
 npm test            # Vitest + Testing Library + axe-core
+npm run test:core   # Plain Node core logic tests (no extra installs needed at runtime)
 npm run test:e2e    # Playwright + @axe-core/playwright (requires: npx playwright install)
+npx @axe-core/cli http://localhost:3000/demo-plain-html.html
 ```
+
+---
+
+## Track 1 Integration Reference (`<accessible-gateway>`)
+
+### 1. Install & Embed
+
+Include `/accessible-gateway.js` and mount `<accessible-gateway>` in any plain HTML page (`demo-plain-html.html`, `savanna/pages/profile.html`, `savanna/pages/jobs.html`):
+
+```html
+<script src="/accessible-gateway.js" defer></script>
+<accessible-gateway
+  tenant-key="SAVANNA_ALX_DEMO"
+  module="onboarding"
+  mode="self"
+  theme="alx"
+  lang="en"
+  api-mode="mock"
+></accessible-gateway>
+```
+
+### 2. Attributes
+
+| Attribute | Values | Purpose |
+| --- | --- | --- |
+| `module` | `all`, `onboarding`, `profile`, `career`, `employer` | Selects which module renders initially. |
+| `mode` | `self`, `partner`, `edit` | Starts self-registration, partner-assisted consent registration, or profile edit mode (`PATCH`). |
+| `questions` | URL (e.g. `/questions/signup.json`, `/questions/job-apply.json`, `/questions/employer-accommodations.json`) | Loads a JSON question-file driven flow using the lazy `JsonQuestionFlow` engine. |
+| `lang` | `en`, `am`, `om` | Sets UI language (`dir="rtl"` is supported automatically for RTL languages). |
+| `api-mode` | `mock`, `real` | Uses `localStorage` / in-memory mock when empty (`mock`), or `fetch()` against `api-base-url`. |
+| `api-base-url` | Origin URL | Base REST API origin when `api-mode="real"`. |
+
+### 3. Events
+
+Emits both existing `gateway:*` events and Track 1 `db-signup:*` CustomEvents (composed, bubbling out of Shadow DOM):
+
+- `db-signup:step` — `{ step, of }` on every question transition.
+- `db-signup:support` — `{ supportPreferences, timestamp }` dispatched separately from core profile creation.
+- `db-signup:done` — `{ profile: { idRoute, ... }, receipt, timestamp }` (`profile.idRoute === 'partner-referral'` on no-document / partner referral).
+
+### 4. REST API `curl` Examples
+
+```bash
+# Create learner profile
+curl -X POST http://localhost:3000/api/v1/learners \
+  -H "Content-Type: application/json" \
+  -d '{"fullName":"Abebe Bikila","contactMethod":"phone","contactValue":"+251911234567","identityRoute":"no_documents"}'
+
+# Update learner profile (Edit mode)
+curl -X PATCH http://localhost:3000/api/v1/learners/LRN-123 \
+  -H "Content-Type: application/json" \
+  -d '{"fullName":"Abebe Bikila","contactValue":"+251911234568"}'
+
+# Save separate support preferences
+curl -X PUT http://localhost:3000/api/v1/learners/LRN-123/support \
+  -H "Content-Type: application/json" \
+  -d '{"supportPreferences":["communication_assistance"],"supportNotes":"Interpreter preferred"}'
+
+# Export learner profile JSON
+curl http://localhost:3000/api/v1/learners/LRN-123/export
+
+# Delete learner profile
+curl -X DELETE http://localhost:3000/api/v1/learners/LRN-123
+```
+
+### 5. Adding a New Language (e.g. Arabic `dir="rtl"`)
+
+1. Add one locale file in `src/i18n/locales/ar.ts` matching `TranslationDictionary` (with `needsNativeReview: true` until reviewed by a native speaker).
+2. Register it in `src/i18n/index.ts` and `LANGUAGE_REGISTRY` (`dir: 'rtl'`, `speechLangTag: 'ar-SA'`) when ready to expose in the dropdown. Logical CSS utilities (`margin-inline`, `padding-inline`, `text-start`) mirror automatically for `dir="rtl"`.
+
+### 6. Offline & Slow-3G Resilience
+
+- Typed/selected answers stay in component state (and sanitized non-sensitive fields save to IndexedDB/localStorage only when the user confirms the device is **not** shared).
+- Listening to `offline` / `online` announces connection drops in plain words inside the ARIA `LiveRegion` and retries pending submissions automatically when connectivity returns.
+- Heavy optional modules (`CareerGateway`, `EmployerAccommodationForm`, `JsonQuestionFlow`, `VoiceAssistantPanel`) are code-split and lazy-loaded only when opened.
+

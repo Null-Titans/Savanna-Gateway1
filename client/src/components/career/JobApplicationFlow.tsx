@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n';
 import { JobApplicationDraft, JobPosting, SubmissionReceipt } from '../../types/gateway';
 import { gatewayApi } from '../../services/api/client';
 import { emitGatewayEvent } from '../../utils/events';
+import { normalizeEthiopianPhone } from '../../utils/coreHelpers.mjs';
 import { FormStepDefinition, OneQuestionEngine } from '../forms/OneQuestionEngine';
 import { VoiceTextField } from '../forms/VoiceTextField';
 import { FormErrorItem } from '../forms/ErrorSummary';
@@ -68,6 +69,12 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
         validate: () => {
           if (!appDraft.contactValue.trim()) {
             return [{ fieldId: 'gw-app-contact', message: t.onboarding.errors.emptyContactValue }];
+          }
+          if (!appDraft.contactValue.includes('@')) {
+            const normalized = normalizeEthiopianPhone(appDraft.contactValue);
+            if (normalized && normalized !== appDraft.contactValue) {
+              setAppDraft((p) => ({ ...p, contactValue: normalized }));
+            }
           }
           return [];
         },
@@ -287,6 +294,14 @@ export const JobApplicationFlow: React.FC<JobApplicationFlowProps> = ({
               stepId: steps[idx]?.id || 'step',
               stepIndex: idx,
               totalSteps: steps.length + 1,
+            },
+            hostElement
+          );
+          emitGatewayEvent(
+            'db-signup:step',
+            {
+              step: idx + 1,
+              of: steps.length + 1,
             },
             hostElement
           );

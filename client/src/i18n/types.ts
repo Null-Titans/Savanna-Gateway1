@@ -48,10 +48,15 @@ export interface TranslationDictionary {
     errorSummaryTitle: string;
     darkModeLabel: string;
     lightModeLabel: string;
+    easyReadOn: string;
+    easyReadOff: string;
+    offlineNotice: string;
+    onlineRetryNotice: string;
   };
   nav: {
     gateway: string;
     onboarding: string;
+    profile: string;
     careers: string;
     employers: string;
     judgeChecklist: string;
@@ -94,6 +99,7 @@ export interface TranslationDictionary {
     retryMic: string;
     emptySpeechError: string;
     fallbackEnglishButton: string;
+    voiceNoteFallbackNotice: string;
   };
   voiceAssistant: {
     title: string;
@@ -137,6 +143,11 @@ export interface TranslationDictionary {
     smsPhoneLabel: string;
     smsSendButton: string;
     smsSentSuccess: string;
+    exportDataButton: string;
+    deleteConfirmTitle: string;
+    deleteConfirmBody: string;
+    deleteConfirmYes: string;
+    deleteConfirmCancel: string;
   };
   onboarding: {
     pageTitle: string;
@@ -195,6 +206,10 @@ export interface TranslationDictionary {
     confirmationTitle: string;
     confirmationDemoNote: string;
     confirmationRealNote: string;
+    partnerConfirmationNote: string;
+    referralNextStepNote: string;
+    editModeTitle: string;
+    editModeSavedNote: string;
     startCareerFromConfirm: string;
     errors: {
       emptyName: string;
@@ -202,6 +217,7 @@ export interface TranslationDictionary {
       emptyPartnerConsent: string;
       emptyPartnerOrg: string;
       emptyContactValue: string;
+      invalidEthiopianPhone: string;
     };
   };
   career: {
@@ -220,6 +236,8 @@ export interface TranslationDictionary {
     viewDetails: string;
     hideDetails: string;
     jsonLdLabel: string;
+    listenSummary: string;
+    mySupportFilterLabel: string;
     categories: {
       remote_flexible: string;
       flexible_hours: string;

@@ -1,0 +1,68 @@
+{
+  "id": "signup",
+  "title": "Learner Registration (Question-File Driven)",
+  "description": "Accessible one-question-per-screen learner onboarding schema.",
+  "submitLabel": "Submit registration",
+  "doneMessage": "Registration complete. Your answers are saved safely.",
+  "questions": [
+    {
+      "id": "fullName",
+      "type": "text",
+      "label": "What is your full name?",
+      "helpText": "Type or speak the name you want trainers to call you.",
+      "whyWeAsk": "Used to personalize your learning profile.",
+      "required": true
+    },
+    {
+      "id": "phone",
+      "type": "phone",
+      "label": "What is your mobile number?",
+      "helpText": "Ethiopian numbers starting with 09, 07, or +251 are normalized automatically.",
+      "whyWeAsk": "So coordinators can share updates about your learning program.",
+      "required": false,
+      "optional": true
+    },
+    {
+      "id": "identityRoute",
+      "type": "radio",
+      "label": "Choose an identity option",
+      "helpText": "No kebele ID or passport is required.",
+      "whyWeAsk": "Alternative verification ensures no learner is turned away.",
+      "required": true,
+      "options": [
+        { "value": "national_id", "label": "National ID (Fayda / Kebele)" },
+        { "value": "refugee_id", "label": "Refugee ID" },
+        { "value": "other_document", "label": "Other identity document" },
+        { "value": "no_documents", "label": "I have no document, refer me through a partner" }
+      ]
+    },
+    {
+      "id": "supportPreferences",
+      "type": "checkbox",
+      "label": "Do you want any learning or access support?",
+      "helpText": "Kept private for your support coordinator only.",
+      "whyWeAsk": "Helps us prepare readable formats, extra time, or interpreters.",
+      "required": false,
+      "optional": true,
+      "options": [
+        { "value": "communication_assistance", "label": "Sign language or communication assistance" },
+        { "value": "alternative_materials", "label": "Screen reader, audio, or large-print materials" },
+        { "value": "flexible_scheduling", "label": "Flexible scheduling or extra time" },
+        { "value": "discuss_privately", "label": "Prefer to discuss privately" }
+      ]
+    },
+    {
+      "id": "consent",
+      "type": "consent",
+      "label": "Confirm registration consent",
+      "helpText": "I confirm my answers are accurate and understand employers never see my private support choices without my permission.",
+      "whyWeAsk": "Protects your privacy and ensures informed consent.",
+      "required": true
+    },
+    {
+      "id": "review",
+      "type": "review",
+      "label": "Review and submit your registration"
+    }
+  ]
+}

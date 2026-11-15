@@ -22,6 +22,7 @@ export const GatewayHeader: React.FC<GatewayHeaderProps> = ({
   const navItems: Array<{ id: GatewayModule; label: string }> = [
     { id: 'home', label: t.nav.gateway },
     { id: 'onboarding', label: t.nav.onboarding },
+    { id: 'profile', label: t.nav.profile },
     { id: 'career', label: t.nav.careers },
     { id: 'employer', label: t.nav.employers },
     ...(isDemoMode ? [{ id: 'judge' as const, label: t.nav.judgeChecklist }] : []),

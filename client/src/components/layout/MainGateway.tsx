@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { GatewayModule, ValidatedTheme } from '../../types/gateway';
+import { getAssetCandidates } from '../../utils/assetUrl';
 import { ReadAloudButton } from '../accessibility/ReadAloudButton';
 
 interface MainGatewayProps {
@@ -19,13 +20,13 @@ interface MainGatewayProps {
   onNavigate: (mod: GatewayModule, opts?: { partnerAssisted?: boolean }) => void;
 }
 
-const HERO_IMAGE = '/assets/images/saia_hero_team_1794654721733.jpg';
-const CARD_MEETING_IMAGE = '/assets/images/saia_card_meeting_1794654722770.jpg';
-const ONBOARDING_CARD_IMAGE = '/assets/images/saia_event_forum_1794654723318.jpg';
-const CAREER_CARD_IMAGE = '/assets/images/saia_event_retro_1794654722990.jpg';
-const AVATAR_ISABELLE = '/assets/images/saia_avatar_isabelle_1794654725631.jpg';
-const AVATAR_BARAKAT = '/assets/images/saia_avatar_barakat_1794654725241.jpg';
-const AVATAR_LUCAS = '/assets/images/saia_avatar_lucas_1794654725988.jpg';
+const HERO_IMAGE = 'assets/images/saia_hero_team_1794654721733.jpg';
+const CARD_MEETING_IMAGE = 'assets/images/saia_card_meeting_1794654722770.jpg';
+const ONBOARDING_CARD_IMAGE = 'assets/images/saia_event_forum_1794654723318.jpg';
+const CAREER_CARD_IMAGE = 'assets/images/saia_event_retro_1794654722990.jpg';
+const AVATAR_ISABELLE = 'assets/images/saia_avatar_isabelle_1794654725631.jpg';
+const AVATAR_BARAKAT = 'assets/images/saia_avatar_barakat_1794654725241.jpg';
+const AVATAR_LUCAS = 'assets/images/saia_avatar_lucas_1794654725988.jpg';
 
 const HERO_PILL_ROWS: string[][] = [
   ['WCAG 2.2 AA', 'English · አማርኛ · Afaan Oromo', 'Voice Input'],
@@ -41,9 +42,14 @@ function GatewayImage({
   alt: string;
   className: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const candidates = useMemo(() => getAssetCandidates(src), [src]);
+  const [attemptIdx, setAttemptIdx] = useState(0);
 
-  if (failed) {
+  useEffect(() => {
+    setAttemptIdx(0);
+  }, [src]);
+
+  if (attemptIdx >= candidates.length) {
     return (
       <div
         className={`${className} bg-gradient-to-br from-[#0F1E36] via-[#1E3A5F] to-amber-700/70`}
@@ -54,10 +60,10 @@ function GatewayImage({
 
   return (
     <img
-      src={src}
+      src={candidates[attemptIdx]}
       alt={alt}
       referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
+      onError={() => setAttemptIdx((idx) => idx + 1)}
       className={className}
     />
   );

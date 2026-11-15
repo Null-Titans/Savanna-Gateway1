@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { HardDrive, MessageSquare, Shield, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Download, HardDrive, MessageSquare, Shield, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { ApiCapabilities, SaveStorageStatus } from '../../types/gateway';
 import { SanitizedLocalDraft } from '../../utils/indexedDbDrafts';
+import { formatEthiopianDate } from '../../utils/coreHelpers.mjs';
+import { gatewayApi } from '../../services/api/client';
 
 interface SaveResumePanelProps {
   isSharedDevice: boolean | null;
@@ -29,7 +31,17 @@ export const SaveResumePanel: React.FC<SaveResumePanelProps> = ({
   const [smsPhone, setSmsPhone] = useState('');
   const [smsFeedback, setSmsFeedback] = useState<string | null>(null);
   const [deletedNotice, setDeletedNotice] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    if (!confirmDeleteOpen) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') setConfirmDeleteOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [confirmDeleteOpen]);
 
   const statusText =
     storageStatus === 'device_indexeddb'
@@ -54,10 +66,26 @@ export const SaveResumePanel: React.FC<SaveResumePanelProps> = ({
     setIsBusy(true);
     try {
       await onDeleteDeviceDraft();
+      await gatewayApi.deleteLearner();
       setDeletedNotice(true);
+      setConfirmDeleteOpen(false);
     } finally {
       setIsBusy(false);
     }
+  };
+
+  const handleExportData = async () => {
+    const exported = (await gatewayApi.exportLearner()) || existingDeviceDraft;
+    const payload = exported || { notice: 'No saved draft or profile stored on this device.' };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'my-learner-data.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const handleSms = async (e: React.FormEvent) => {
@@ -102,7 +130,7 @@ export const SaveResumePanel: React.FC<SaveResumePanelProps> = ({
           </p>
           <p className="text-xs text-slate-700 dark:text-slate-300">
             {format(t.saveResume.resumeFoundBody, {
-              date: new Date(existingDeviceDraft.updatedAtIso).toLocaleString(),
+              date: `${new Date(existingDeviceDraft.updatedAtIso).toLocaleString()} (${formatEthiopianDate(existingDeviceDraft.updatedAtIso)})`,
             })}
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
@@ -147,13 +175,55 @@ export const SaveResumePanel: React.FC<SaveResumePanelProps> = ({
             <button
               type="button"
               disabled={isBusy}
-              onClick={handleDelete}
+              onClick={() => void handleExportData()}
+              className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-[#0F1E36] dark:text-slate-100 text-sm font-semibold hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-[#1E3A5F] dark:text-amber-400" aria-hidden="true" />
+              <span>{t.saveResume.exportDataButton}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => setConfirmDeleteOpen(true)}
               className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-md border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/50 text-red-900 dark:text-red-100 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-950/80 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" aria-hidden="true" />
               <span>{t.saveResume.deleteSavedButton}</span>
             </button>
           </div>
+
+          {confirmDeleteOpen && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="gw-delete-dialog-title"
+              className="rounded-xl border-2 border-red-700 dark:border-red-500 bg-red-50 dark:bg-red-950/80 p-4 space-y-3"
+            >
+              <h4 id="gw-delete-dialog-title" className="text-base font-bold text-red-950 dark:text-red-100">
+                {t.saveResume.deleteConfirmTitle}
+              </h4>
+              <p className="text-sm text-red-900 dark:text-red-200">{t.saveResume.deleteConfirmBody}</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={handleDelete}
+                  className="min-h-[44px] px-4 py-2 rounded-md bg-red-800 hover:bg-red-900 text-white text-sm font-bold cursor-pointer"
+                >
+                  {t.saveResume.deleteConfirmYes}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteOpen(false)}
+                  className="min-h-[44px] px-4 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[#0F1E36] dark:text-slate-100 text-sm font-semibold cursor-pointer"
+                >
+                  {t.saveResume.deleteConfirmCancel}
+                </button>
+              </div>
+            </div>
+          )}
+
           {deletedNotice && (
             <p
               role="status"

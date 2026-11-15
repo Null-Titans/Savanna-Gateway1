@@ -1,10 +1,12 @@
-﻿import {
+import {
   AccommodationCategory,
   ApiCapabilities,
   JobApplicationDraft,
   JobPosting,
+  LearnerProfile,
   OnboardingDraft,
   SubmissionReceipt,
+  SupportPreference,
 } from '../../types/gateway';
 
 async function requestJson<T>(
@@ -13,22 +15,27 @@ async function requestJson<T>(
   init?: RequestInit
 ): Promise<T> {
   if (!baseUrl) {
-    throw new Error('VITE_API_BASE_URL is not configured. Switch to Demo mode or configure the backend URL.');
+    throw new Error('No server address is set. Switch to Demo mode or add the server address in settings.');
   }
   const url = `${baseUrl}${path}`;
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error('Could not reach the server right now. Check your internet connection; your answers are still safe on this screen.');
+  }
 
   if (!response.ok) {
-    let detail = `Server returned status ${response.status}`;
+    let detail = 'The server could not save this right now. Your answers are still safe on this screen.';
     try {
       const errBody = await response.json();
-      if (errBody && typeof errBody.message === 'string') {
+      if (errBody && typeof errBody.message === 'string' && errBody.message.length < 220) {
         detail = errBody.message;
       }
     } catch {
@@ -37,6 +44,9 @@ async function requestJson<T>(
     throw new Error(detail);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
   return (await response.json()) as T;
 }
 
@@ -72,7 +82,6 @@ export function createRestAdapter(baseUrl: string) {
       if (categories && categories.length > 0) {
         params.set('accommodations', categories.join(','));
       }
-      params.set('format', 'array');
       const qs = params.toString();
       return requestJson<JobPosting[]>(baseUrl, `/api/v1/jobs${qs ? `?${qs}` : ''}`);
     },
@@ -93,6 +102,46 @@ export function createRestAdapter(baseUrl: string) {
       });
     },
 
+    // ADDED: Track 1 Learner CRUD REST endpoints
+    async createLearner(draft: OnboardingDraft): Promise<LearnerProfile> {
+      return requestJson<LearnerProfile>(baseUrl, '/api/v1/learners', {
+        method: 'POST',
+        body: JSON.stringify(draft),
+      });
+    },
+
+    async getLearner(id: string): Promise<LearnerProfile | null> {
+      return requestJson<LearnerProfile>(baseUrl, `/api/v1/learners/${encodeURIComponent(id)}/export`);
+    },
+
+    async updateLearner(id: string, patch: Partial<OnboardingDraft>): Promise<LearnerProfile> {
+      return requestJson<LearnerProfile>(baseUrl, `/api/v1/learners/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      });
+    },
+
+    async updateLearnerSupport(
+      id: string,
+      support: { supportPreferences: SupportPreference[]; supportNotes: string }
+    ): Promise<LearnerProfile> {
+      return requestJson<LearnerProfile>(baseUrl, `/api/v1/learners/${encodeURIComponent(id)}/support`, {
+        method: 'PUT',
+        body: JSON.stringify(support),
+      });
+    },
+
+    async exportLearner(id: string): Promise<LearnerProfile | null> {
+      return requestJson<LearnerProfile>(baseUrl, `/api/v1/learners/${encodeURIComponent(id)}/export`);
+    },
+
+    async deleteLearner(id: string): Promise<{ deleted: boolean }> {
+      await requestJson<unknown>(baseUrl, `/api/v1/learners/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      return { deleted: true };
+    },
+
     async submitJobApplication(app: JobApplicationDraft): Promise<SubmissionReceipt> {
       return requestJson<SubmissionReceipt>(baseUrl, `/api/v1/jobs/${encodeURIComponent(app.jobId)}/applications`, {
         method: 'POST',
@@ -108,4 +157,3 @@ export function createRestAdapter(baseUrl: string) {
     },
   };
 }
-

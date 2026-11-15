@@ -12,11 +12,14 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "test": "vitest run",
+    "test:core": "node --test tests/core.test.mjs",
+    "test:axe": "npx @axe-core/cli http://localhost:3000/demo-plain-html.html",
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
+    "@google/genai": "^3.3.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "^6.1.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
@@ -24,7 +27,8 @@
     "motion": "^12.23.24",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "ws": "^8.23.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -38,10 +42,10 @@
     "@types/react-dom": "^19.3.0",
     "autoprefixer": "^10.4.21",
     "axe-core": "^4.14.0",
-    "esbuild": "^0.28.2",
+    "esbuild": "^0.25.0",
     "jsdom": "^31.0.1",
     "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.15",
+    "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   }

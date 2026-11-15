@@ -99,7 +99,6 @@ export async function fetchServerSpeechCapabilities(): Promise<ServerSpeechCapab
   } catch {
     // Offline or unit test environment without Express server
   }
-  cachedServerCaps = { ...cachedServerCaps, checked: true };
   return cachedServerCaps;
 }
 
@@ -336,6 +335,8 @@ export async function speakText(
   const resolvedLanguage = detectLanguageFromText(text, language);
   const serverCaps = await fetchServerSpeechCapabilities();
 
+  let serverErrorReason: string | null = null;
+
   if (serverCaps.geminiConfigured && typeof fetch !== 'undefined') {
     const controller = new AbortController();
     activeAbortController = controller;
@@ -395,6 +396,14 @@ export async function speakText(
             return () => stopAllSpeechPlayback();
           }
         }
+      } else {
+        const errBody = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          code?: string;
+        };
+        if (errBody.code === 'TTS_QUOTA' && errBody.error) {
+          serverErrorReason = errBody.error;
+        }
       }
     } catch (err) {
       if ((err as Error)?.name === 'AbortError') {
@@ -415,7 +424,8 @@ export async function speakText(
     const langLabel =
       LANGUAGE_REGISTRY.find((l) => l.code === resolvedLanguage)?.nativeName || resolvedLanguage;
     onError?.(
-      `No authentic ${langLabel} voice is available on this device without the neural speech service. Text remains readable on screen rather than using an incorrect English voice.`
+      serverErrorReason ||
+        `No authentic ${langLabel} voice is available on this device without the neural speech service. Text remains readable on screen rather than using an incorrect English voice.`
     );
     return () => {};
   }

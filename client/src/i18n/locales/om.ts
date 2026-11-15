@@ -38,10 +38,15 @@ export const om: TranslationDictionary = {
     errorSummaryTitle: 'Itti fufuun dura waan tokko mirkaneessaa',
     darkModeLabel: 'Haala Dukkanaa',
     lightModeLabel: 'Haala Ifaa',
+    easyReadOn: 'Ilaalcha salphaa: Banaa', // needs native review
+    easyReadOff: 'Ilaalcha salphaa', // needs native review
+    offlineNotice: 'Quunnamtiin citeera. Deebiin keessan fuula kana irra jira; yeroo deebi\'u irra deebi\'ee yaala.', // needs native review
+    onlineRetryNotice: 'Quunnamtiin deebi\'eera.', // needs native review
   },
   nav: {
     gateway: 'Fuula Duraa',
     onboarding: 'Galmee',
+    profile: 'Piroofayilii koo', // needs native review
     careers: 'Hojiiwwan Mijatoo',
     employers: 'Hojjechiistotaaf',
     judgeChecklist: 'Tarree Mirkaneessaa',
@@ -91,6 +96,7 @@ export const om: TranslationDictionary = {
     retryMic: 'Maayikiroofoonii irra deebi\'ii yaali',
     emptySpeechError: 'Sagaleen hin dhagamne. Irra deebi\'uuf maayikiroofoonii bani tuqaa ykn barreessaa.',
     fallbackEnglishButton: 'Ingiliffaan dubbadhu',
+    voiceNoteFallbackNotice: 'Interneetii malee: yaadannoon sagalee yeroof fuula kana irratti qofa qabameera.', // needs native review
   },
   voiceAssistant: {
     title: 'Gargaaraa Sagalee Afaanota Sadii',
@@ -134,6 +140,11 @@ export const om: TranslationDictionary = {
     smsPhoneLabel: 'Lakkoofsa bilbilaa liinkii itti fufinsaatiif',
     smsSendButton: 'Liinkii SMS ergi',
     smsSentSuccess: 'Sarvarri gaaffii SMS keessanii fudhateera.',
+    exportDataButton: 'Odeeffannoo koo buufadhu (JSON)', // needs native review
+    deleteConfirmTitle: 'Piroofayilii fi deebii kuufame haquu?', // needs native review
+    deleteConfirmBody: 'Kun deebii keessan meeshaa kana ykn sarvara irraa guutummaatti haqa.', // needs native review
+    deleteConfirmYes: 'Eeyyee, hunda haqi', // needs native review
+    deleteConfirmCancel: 'Deebii koo tursiisi', // needs native review
   },
   onboarding: {
     pageTitle: 'Galmee Barataa',
@@ -207,6 +218,10 @@ export const om: TranslationDictionary = {
     confirmationTitle: 'Galmeen qophaa\'eera',
     confirmationDemoNote: 'Haala agarsiisaa: Deebiin keessan asitti mirkanaa\'eera; gara sarvara dhugaa hin ergamne.',
     confirmationRealNote: 'Galmeen keessan gara sarvaraatti ergameera.',
+    partnerConfirmationNote: 'Dhaabbanni michuu isin qunnama.', // needs native review
+    referralNextStepNote: 'Tarkaanfii itti aanu: Qindeessaan dhaabbata michuu galmee keessan mirkaneessee karaa filattaniin isin qunnama.', // needs native review
+    editModeTitle: 'Piroofayilii koo sirreessi', // needs native review
+    editModeSavedNote: 'Jijjiiramni piroofayilii keessanii kuufameera.', // needs native review
     startCareerFromConfirm: 'Itti aansee hojiiwwan mijatoo ilaali',
     errors: {
       emptyName: 'Saanduqni maqaa duwwaa dha. Itti fufuuf maaloo maqaa keessan barreessaa ykn dubbadhaa.',
@@ -214,6 +229,7 @@ export const om: TranslationDictionary = {
       emptyPartnerConsent: 'Saanduqni hayyamaa hin mallatteeffamne. Erguun dura hayyama barataa mirkaneessaa.',
       emptyPartnerOrg: 'Maqaan dhaabbata michuu duwwaa dha. Maaloo maqaa dhaabbatichaa barreessaa.',
       emptyContactValue: 'Odeeffannoon qunnamtii duwwaa dha. Bilbila/imeelii galchaa ykn "kennuu hin barbaadu" filadhaa.',
+      invalidEthiopianPhone: 'Lakkoofsa bilbilaa Itoophiyaa sirrii 09, 07 ykn +251n jalqabu galchaa.', // needs native review
     },
   },
   career: {
@@ -232,6 +248,8 @@ export const om: TranslationDictionary = {
     viewDetails: 'Bal\'ina dhaqqabummaa guutuu dubbisi',
     hideDetails: 'Bal\'ina dhoksi',
     jsonLdLabel: 'Schema.org JobPosting JSON-LD hidhameera',
+    listenSummary: 'Cuunfaa dhaggeeffadhu', // needs native review
+    mySupportFilterLabel: 'Deeggarsa na barbaachisu (filannoo koo kuufame waliin iccitiin wal simsiisi)', // needs native review
     categories: {
       remote_flexible: 'Hojii mana irraa ykn jijjiiramaa',
       flexible_hours: 'Sa\'aatii hojii mijataa',

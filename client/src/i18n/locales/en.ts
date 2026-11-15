@@ -31,10 +31,15 @@ export const en: TranslationDictionary = {
     errorSummaryTitle: 'Please check one thing before continuing',
     darkModeLabel: 'Dark mode',
     lightModeLabel: 'Light mode',
+    easyReadOn: 'Simple view: On',
+    easyReadOff: 'Simple view',
+    offlineNotice: 'Connection lost. Your answers are safe on this screen and will retry when you are back online.',
+    onlineRetryNotice: 'You are back online.',
   },
   nav: {
     gateway: 'Home',
     onboarding: 'Registration',
+    profile: 'My Profile',
     careers: 'Accessible Jobs',
     employers: 'For Employers',
     judgeChecklist: 'Judge Checklist',
@@ -84,6 +89,7 @@ export const en: TranslationDictionary = {
     retryMic: 'Try microphone again',
     emptySpeechError: 'No speech was heard. Tap Start microphone to try again or type your answer.',
     fallbackEnglishButton: 'Speak in English instead',
+    voiceNoteFallbackNotice: 'Offline or server unavailable: voice note kept in temporary memory on this screen only (not uploaded).',
   },
   voiceAssistant: {
     title: 'Multilingual Voice Assistant',
@@ -127,6 +133,11 @@ export const en: TranslationDictionary = {
     smsPhoneLabel: 'Mobile number for resume link',
     smsSendButton: 'Send resume link',
     smsSentSuccess: 'Server accepted your SMS resume link request.',
+    exportDataButton: 'Download my data (JSON)',
+    deleteConfirmTitle: 'Delete your saved profile and answers?',
+    deleteConfirmBody: 'This permanently removes your saved draft and profile from this device or server.',
+    deleteConfirmYes: 'Yes, delete everything',
+    deleteConfirmCancel: 'Keep my answers',
   },
   onboarding: {
     pageTitle: 'Learner registration',
@@ -200,6 +211,10 @@ export const en: TranslationDictionary = {
     confirmationTitle: 'Registration ready',
     confirmationDemoNote: 'Demo mode: Your answers were validated here, and nothing was sent to a live server.',
     confirmationRealNote: 'Your registration was sent to the server.',
+    partnerConfirmationNote: 'A partner will contact you.',
+    referralNextStepNote: 'Next step: A community partner coordinator will verify your registration and contact you using your chosen method.',
+    editModeTitle: 'Edit my profile',
+    editModeSavedNote: 'Your profile changes were saved.',
     startCareerFromConfirm: 'Explore accessible jobs next',
     errors: {
       emptyName: 'This name box is empty. Please type or speak your name to continue.',
@@ -207,6 +222,7 @@ export const en: TranslationDictionary = {
       emptyPartnerConsent: 'Permission is not checked yet. Please confirm the learner gave consent before submitting.',
       emptyPartnerOrg: 'Partner organization name is empty. Please type the organization name.',
       emptyContactValue: 'Contact detail is empty. Please enter a phone or email, or choose "prefer not to share".',
+      invalidEthiopianPhone: 'Enter a valid Ethiopian phone number starting with 09, 07, or +251.',
     },
   },
   career: {
@@ -225,6 +241,8 @@ export const en: TranslationDictionary = {
     viewDetails: 'Read full accessibility details',
     hideDetails: 'Hide details',
     jsonLdLabel: 'Schema.org JobPosting JSON-LD attached',
+    listenSummary: 'Listen to summary',
+    mySupportFilterLabel: 'Support I need (match my saved support choices privately)',
     categories: {
       remote_flexible: 'Remote or flexible work',
       flexible_hours: 'Flexible working hours',

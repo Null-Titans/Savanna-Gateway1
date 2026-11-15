@@ -3,6 +3,7 @@ import { Briefcase, Cross, Lock, Search } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { AccommodationCategory, JobPosting } from '../../types/gateway';
 import { gatewayApi } from '../../services/api/client';
+import { VoiceConversationFilter } from '../accessibility/VoiceConversationFilter';
 import { JobCard } from './JobCard';
 import { JobApplicationFlow } from './JobApplicationFlow';
 
@@ -32,6 +33,27 @@ export const CareerGateway: React.FC<CareerGatewayProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [applyingJob, setApplyingJob] = useState<JobPosting | null>(null);
+  const [savedSupportCats, setSavedSupportCats] = useState<AccommodationCategory[]>([]);
+  const [matchMySupport, setMatchMySupport] = useState(false);
+
+  useEffect(() => {
+    void gatewayApi.getLearner().then((learner) => {
+      if (!learner?.supportPreferences?.length) return;
+      const mapped = new Set<AccommodationCategory>();
+      for (const pref of learner.supportPreferences) {
+        if (pref === 'communication_assistance') mapped.add('communication_support');
+        if (pref === 'alternative_materials') {
+          mapped.add('screen_reader_tools');
+          mapped.add('assistive_tech');
+        }
+        if (pref === 'flexible_scheduling') {
+          mapped.add('flexible_hours');
+          mapped.add('remote_flexible');
+        }
+      }
+      setSavedSupportCats([...mapped]);
+    });
+  }, []);
 
   const fetchJobs = useCallback(async () => {
     setIsLoading(true);
@@ -94,6 +116,25 @@ export const CareerGateway: React.FC<CareerGatewayProps> = ({
         </p>
       </div>
 
+      {/* Accessible Voice Filter (SpeechRecognition) & Real-Time Live Voice Conversation (gemini-3.8-live) */}
+      <VoiceConversationFilter
+        currentSearchQuery={searchQuery}
+        selectedCategories={selectedCategories}
+        resultCount={jobs.length}
+        context="career"
+        onApplyVoiceFilter={({ searchQuery: nextQuery, categories: nextCats }) => {
+          setSearchQuery(nextQuery);
+          if (nextCats.length > 0) {
+            setSelectedCategories((prev) => Array.from(new Set([...prev, ...nextCats])));
+          }
+        }}
+        onClearVoiceFilter={() => {
+          setSearchQuery('');
+          setSelectedCategories([]);
+          setMatchMySupport(false);
+        }}
+      />
+
       {/* Search + Private Support-Needs Filter */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-7 shadow-sm space-y-5">
         <div className="space-y-2">
@@ -142,6 +183,28 @@ export const CareerGateway: React.FC<CareerGatewayProps> = ({
             />
             <span>{t.career.filterPrivacyNote}</span>
           </p>
+
+          {savedSupportCats.length > 0 && (
+            <label className="inline-flex items-center gap-2.5 min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-[#F3F4F6] dark:bg-slate-800 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={matchMySupport}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setMatchMySupport(checked);
+                  setSelectedCategories((prev) =>
+                    checked
+                      ? Array.from(new Set([...prev, ...savedSupportCats]))
+                      : prev.filter((c) => !savedSupportCats.includes(c))
+                  );
+                }}
+                className="h-5 w-5 rounded accent-[#0F1E36] dark:accent-amber-500"
+              />
+              <span className="text-sm font-semibold text-[#0F1E36] dark:text-slate-100">
+                {t.career.mySupportFilterLabel}
+              </span>
+            </label>
+          )}
 
           <div className="flex flex-wrap gap-2">
             {ACCOMMODATION_CATEGORIES.map((cat) => {

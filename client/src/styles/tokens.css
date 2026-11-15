@@ -145,6 +145,22 @@ html {
   border: 0;
 }
 
+/* ADDED: Ethiopic / Amharic 1.7 line-height for readability */
+:lang(am),
+[lang="am"] {
+  line-height: 1.7;
+}
+
+/* ADDED: Low-literacy / Easy-read mode typography */
+.gw-easy-read {
+  font-size: 1.125rem;
+  line-height: 1.85;
+}
+
+.gw-easy-read .gw-secondary-note {
+  display: none;
+}
+
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,

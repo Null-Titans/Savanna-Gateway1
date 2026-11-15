@@ -658,3 +658,86 @@ describe('Voice Input Repair (webkitSpeechRecognition, Empty Guard, Permissions 
   });
 });
 
+describe('VoiceConversationFilter (SpeechRecognition States, Job Filtering & WCAG 2.2 AA)', () => {
+  const originalSpeechRecognition = (window as unknown as Record<string, unknown>).SpeechRecognition;
+  const originalWebkitSpeechRecognition = (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'SpeechRecognition', {
+      value: originalSpeechRecognition,
+      configurable: true,
+    });
+    Object.defineProperty(window, 'webkitSpeechRecognition', {
+      value: originalWebkitSpeechRecognition,
+      configurable: true,
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('filters CareerGateway jobs via native SpeechRecognition, handles errors, and shows Ready/Listening/Error states', async () => {
+    let attempt = 0;
+    class MockFilterRecognition {
+      lang = 'en-US';
+      interimResults = true;
+      continuous = false;
+      maxAlternatives = 1;
+      onstart: (() => void) | null = null;
+      onresult: ((ev: unknown) => void) | null = null;
+      onerror: ((ev: { error: string }) => void) | null = null;
+      onend: (() => void) | null = null;
+      start() {
+        attempt += 1;
+        this.onstart?.();
+        if (attempt === 1) {
+          this.onerror?.({ error: 'not-allowed' });
+          return;
+        }
+        this.onresult?.({
+          resultIndex: 0,
+          results: [
+            Object.assign([{ transcript: 'Remote screen reader jobs' }], { isFinal: true }),
+          ],
+        });
+        this.onend?.();
+      }
+      stop() {
+        this.onend?.();
+      }
+      abort() {}
+    }
+
+    Object.defineProperty(window, 'SpeechRecognition', {
+      value: MockFilterRecognition,
+      configurable: true,
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /Accessible Jobs/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/Voice Filter & Real-Time Conversation/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/State: Ready/i)).toBeInTheDocument();
+
+    // First attempt -> permission error state
+    await user.click(screen.getByRole('button', { name: /Speak to Filter Jobs/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/State: Error/i)).toBeInTheDocument();
+      expect(screen.getByRole('alert')).toHaveTextContent(/Microphone access was blocked/i);
+    });
+
+    // Retry -> filters jobs cleanly and returns to Ready
+    await user.click(screen.getByRole('button', { name: /Try again/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/State: Ready/i)).toBeInTheDocument();
+      expect(screen.getByText(/Recognized speech:/i)).toBeInTheDocument();
+    });
+
+    const remoteBtn = screen.getByRole('button', { name: /Remote or flexible work/i });
+    expect(remoteBtn).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+

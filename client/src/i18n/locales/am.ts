@@ -38,10 +38,15 @@ export const am: TranslationDictionary = {
     errorSummaryTitle: 'ከመቀጠልዎ በፊት ይህን ያስተካክሉ', // needs native review
     darkModeLabel: 'ጨለማ ገጽታ', // needs native review
     lightModeLabel: 'ብሩህ ገጽታ', // needs native review
+    easyReadOn: 'ቀላል እይታ፡ በርቷል', // needs native review
+    easyReadOff: 'ቀላል እይታ', // needs native review
+    offlineNotice: 'ኢንተርኔት ተቋርጧል። መልሶችዎ በዚህ ገጽ ላይ ተይዘዋል፤ ሲመለስ እንደገና ይሞክራል።', // needs native review
+    onlineRetryNotice: 'ኢንተርኔት ተመልሷል።', // needs native review
   },
   nav: {
     gateway: 'መነሻ', // needs native review
     onboarding: 'ምዝገባ', // needs native review
+    profile: 'መገለጫዬ', // needs native review
     careers: 'ተደራሽ ስራዎች', // needs native review
     employers: 'ለአሰሪዎች', // needs native review
     judgeChecklist: 'የዳኞች ማረጋገጫ', // needs native review
@@ -88,6 +93,7 @@ export const am: TranslationDictionary = {
     retryMic: 'ማይክሮፎኑን እንደገና ሞክር', // needs native review
     emptySpeechError: 'ምንም ድምፅ አልተሰማም። እንደገና ለመሞከር ማይክሮፎን ጀምርን ይጫኑ ወይም ይጻፉ።', // needs native review
     fallbackEnglishButton: 'በእንግሊዝኛ ይናገሩ', // needs native review
+    voiceNoteFallbackNotice: 'ኢንተርኔት የለም ወይም ሰርቨሩ አይሰራም፡ የድምፅ ማስታወሻው በዚህ ገጽ ላይ ብቻ ተይዟል።', // needs native review
   },
   voiceAssistant: {
     title: 'ባለብዙ ቋንቋ የድምፅ ረዳት', // needs native review
@@ -131,6 +137,11 @@ export const am: TranslationDictionary = {
     smsPhoneLabel: 'ለመቀጠያ ሊንክ የስልክ ቁጥር', // needs native review
     smsSendButton: 'የመቀጠያ ሊንክ ላክ', // needs native review
     smsSentSuccess: 'ሰርቨሩ የSMS ጥያቄዎን ተቀብሏል።', // needs native review
+    exportDataButton: 'መረጃዬን አውርድ (JSON)', // needs native review
+    deleteConfirmTitle: 'የተቀመጠ መገለጫዎን እና መልሶችዎን ያጥፉ?', // needs native review
+    deleteConfirmBody: 'ይህ የተቀመጡ መልሶችዎን ከዚህ መሳሪያ ወይም ሰርቨር እስከመጨረሻው ያጠፋል።', // needs native review
+    deleteConfirmYes: 'አዎ፣ ሁሉንም አጥፋ', // needs native review
+    deleteConfirmCancel: 'መልሶቼን አቆይ', // needs native review
   },
   onboarding: {
     pageTitle: 'የተማሪ ምዝገባ', // needs native review
@@ -204,6 +215,10 @@ export const am: TranslationDictionary = {
     confirmationTitle: 'ምዝገባው ተዘጋጅቷል', // needs native review
     confirmationDemoNote: 'የማሳያ ሁነታ፡ መልሶችዎ እዚህ ተረጋግጠዋል፤ ወደ እውነተኛ ሰርቨር አልተላኩም።', // needs native review
     confirmationRealNote: 'ምዝገባዎ ወደ ሰርቨር ተልኳል።', // needs native review
+    partnerConfirmationNote: 'አጋር ድርጅት ያገኝዎታል።', // needs native review
+    referralNextStepNote: 'ቀጣይ እርምጃ፡ የማህበረሰብ አጋር አስተባባሪ ምዝገባዎን አረጋግጦ በመረጡት መንገድ ያገኝዎታል።', // needs native review
+    editModeTitle: 'መገለጫዬን አስተካክል', // needs native review
+    editModeSavedNote: 'የመገለጫ ለውጦችዎ ተቀምጠዋል።', // needs native review
     startCareerFromConfirm: 'ቀጥሎ ተደራሽ ስራዎችን ይመልከቱ', // needs native review
     errors: {
       emptyName: 'የስም ሳጥኑ ባዶ ነው። እባክዎ ለመቀጠል ስምዎን ይጻፉ ወይም ይናገሩ።', // needs native review
@@ -211,6 +226,7 @@ export const am: TranslationDictionary = {
       emptyPartnerConsent: 'የፈቃድ ሳጥኑ አልተመረጠም። እባክዎ ከመላክዎ በፊት የተማሪውን ፈቃድ ያረጋግጡ።', // needs native review
       emptyPartnerOrg: 'የአጋር ድርጅቱ ስም ባዶ ነው። እባክዎ የድርጅቱን ስም ይጻፉ።', // needs native review
       emptyContactValue: 'የመገናኛ ዝርዝሩ ባዶ ነው። እባክዎ ስልክ ወይም ኢሜይል ያስገቡ ወይም "አሁን መስጠት አልፈልግም" ይምረጡ።', // needs native review
+      invalidEthiopianPhone: 'በ09፣ 07 ወይም +251 የሚጀምር ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ።', // needs native review
     },
   },
   career: {
@@ -229,6 +245,8 @@ export const am: TranslationDictionary = {
     viewDetails: 'ሙሉ የተደራሽነት ዝርዝር ይመልከቱ', // needs native review
     hideDetails: 'ዝርዝሩን ደብቅ', // needs native review
     jsonLdLabel: 'Schema.org JobPosting JSON-LD ተያይዟል', // needs native review
+    listenSummary: 'ማጠቃለያውን በድምፅ አንብብ', // needs native review
+    mySupportFilterLabel: 'የሚያስፈልገኝ ድጋፍ (ከተቀመጡ ምርጫዎቼ ጋር በግል አዛምድ)', // needs native review
     categories: {
       remote_flexible: 'የርቀት ወይም ተለዋዋጭ ስራ', // needs native review
       flexible_hours: 'ተለዋዋጭ የስራ ሰዓት', // needs native review

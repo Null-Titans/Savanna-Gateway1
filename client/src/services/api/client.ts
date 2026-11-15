@@ -4,8 +4,10 @@ import {
   ApiCapabilities,
   JobApplicationDraft,
   JobPosting,
+  LearnerProfile,
   OnboardingDraft,
   SubmissionReceipt,
+  SupportPreference,
 } from '../../types/gateway';
 import { mockAdapter } from './mockAdapter';
 import { createRestAdapter } from './restAdapter';
@@ -61,6 +63,46 @@ class GatewayApiClient {
 
   submitOnboarding(draft: OnboardingDraft): Promise<SubmissionReceipt> {
     return this.getAdapter().submitOnboarding(draft);
+  }
+
+  // ADDED: Track 1 Learner CRUD facade
+  createLearner(draft: OnboardingDraft): Promise<LearnerProfile> {
+    return this.getAdapter().createLearner(draft);
+  }
+
+  getLearner(id?: string): Promise<LearnerProfile | null> {
+    if (this.mode === 'mock') {
+      return mockAdapter.getLearner(id);
+    }
+    if (!id) return Promise.resolve(null);
+    return createRestAdapter(this.baseUrl).getLearner(id);
+  }
+
+  updateLearner(id: string, patch: Partial<OnboardingDraft>): Promise<LearnerProfile> {
+    return this.getAdapter().updateLearner(id, patch);
+  }
+
+  updateLearnerSupport(
+    id: string,
+    support: { supportPreferences: SupportPreference[]; supportNotes: string }
+  ): Promise<LearnerProfile> {
+    return this.getAdapter().updateLearnerSupport(id, support);
+  }
+
+  exportLearner(id?: string): Promise<LearnerProfile | null> {
+    if (this.mode === 'mock') {
+      return mockAdapter.exportLearner(id);
+    }
+    if (!id) return Promise.resolve(null);
+    return createRestAdapter(this.baseUrl).exportLearner(id);
+  }
+
+  deleteLearner(id?: string): Promise<{ deleted: boolean }> {
+    if (this.mode === 'mock') {
+      return mockAdapter.deleteLearner(id);
+    }
+    if (!id) return Promise.resolve({ deleted: false });
+    return createRestAdapter(this.baseUrl).deleteLearner(id);
   }
 
   submitJobApplication(app: JobApplicationDraft): Promise<SubmissionReceipt> {

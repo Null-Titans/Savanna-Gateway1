@@ -15,6 +15,7 @@ import { useI18n } from '../../i18n';
 import { LANGUAGE_REGISTRY } from '../../i18n/types';
 import { useReadAloud } from '../../hooks/useReadAloud';
 import { useSpeechInput } from '../../hooks/useSpeechInput';
+import { useGeminiLive } from '../../hooks/useGeminiLive';
 import { GatewayModule, SupportedLanguage } from '../../types/gateway';
 
 interface ChatMessage {
@@ -87,14 +88,25 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
     discardTranscript,
   } = useSpeechInput(autoDetect ? 'auto' : language, handleDetectedLanguage);
 
+  const {
+    status: liveStatus,
+    errorMessage: liveError,
+    liveInputDraft,
+    liveOutputDraft,
+    entries: liveEntries,
+    startSession: startLiveSession,
+    stopSession: stopLiveSession,
+  } = useGeminiLive(language, activeModule);
+
   useEffect(() => {
     if (open) {
       closeBtnRef.current?.focus();
     } else {
       stopListening();
       stopAudio();
+      stopLiveSession();
     }
-  }, [open, stopAudio, stopListening]);
+  }, [open, stopAudio, stopListening, stopLiveSession]);
 
   useEffect(() => {
     if (!open) return;
@@ -323,6 +335,48 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
               {languageNotice}
             </p>
           )}
+
+          {/* Real-Time Gemini Live (gemini-3.8-live) Conversation Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F3F4F6] dark:bg-slate-800/80 px-3 py-2.5">
+            <span className="text-xs font-semibold text-[#0F1E36] dark:text-slate-100">
+              {liveStatus === 'connected'
+                ? 'Live Voice Active (gemini-3.8-live)'
+                : liveStatus === 'connecting'
+                ? 'Connecting Live Voice…'
+                : 'Real-Time Voice (gemini-3.8-live)'}
+            </span>
+            {liveStatus === 'connected' || liveStatus === 'connecting' ? (
+              <button
+                type="button"
+                onClick={stopLiveSession}
+                className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1 rounded-lg border-2 border-red-700 dark:border-red-500 bg-red-50 dark:bg-red-950/60 text-xs font-bold text-red-950 dark:text-red-100 cursor-pointer"
+              >
+                <Square className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>End Live</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  stopListening();
+                  stopAudio();
+                  void startLiveSession();
+                }}
+                className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-1 rounded-lg bg-[#0F1E36] hover:bg-[#1E3A5F] text-white text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <Mic className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
+                <span>Start Live Voice</span>
+              </button>
+            )}
+          </div>
+          {liveError && (
+            <p
+              role="alert"
+              className="text-xs font-medium text-red-900 dark:text-red-100 bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-700 rounded-xl px-3 py-2"
+            >
+              {liveError}
+            </p>
+          )}
         </div>
 
         {/* Conversation Transcript (independently scroll-contained) */}
@@ -330,12 +384,38 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
           className="flex-1 min-h-0 p-4 space-y-3 overflow-y-auto overscroll-contain bg-[#F3F4F6] dark:bg-slate-950"
           aria-live="polite"
         >
-          {messages.length === 0 ? (
+          {messages.length === 0 && liveEntries.length === 0 && !liveInputDraft && !liveOutputDraft ? (
             <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               {t.voiceAssistant.emptyState}
             </div>
           ) : (
-            messages.map((msg) => {
+            <>
+              {liveEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={`rounded-2xl border p-3.5 text-sm shadow-xs ${
+                    entry.role === 'user'
+                      ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 ml-6'
+                      : 'bg-amber-50/70 dark:bg-slate-800 border-amber-300 dark:border-slate-700 mr-4'
+                  }`}
+                >
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    {entry.role === 'user' ? 'You (Live)' : 'Gemini Live'}
+                  </div>
+                  <p className="text-[#0F1E36] dark:text-slate-100">{entry.text}</p>
+                </div>
+              ))}
+              {liveInputDraft && (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-900 p-3 text-sm ml-6">
+                  {liveInputDraft}
+                </div>
+              )}
+              {liveOutputDraft && (
+                <div className="rounded-xl border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm mr-4">
+                  {liveOutputDraft}
+                </div>
+              )}
+              {messages.map((msg) => {
               const langMeta = LANGUAGE_REGISTRY.find((l) => l.code === msg.language);
               return (
                 <div
@@ -377,7 +457,8 @@ export const VoiceAssistantPanel: React.FC<VoiceAssistantPanelProps> = ({
                   </p>
                 </div>
               );
-            })
+            })}
+            </>
           )}
 
           {isSending && (

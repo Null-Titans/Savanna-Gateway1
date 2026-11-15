@@ -55,10 +55,17 @@ const VoiceAssistantPanel = lazy(() =>
     default: m.VoiceAssistantPanel,
   }))
 );
+const JsonQuestionFlow = lazy(() =>
+  import('../components/forms/JsonQuestionFlow').then((m) => ({
+    default: m.JsonQuestionFlow,
+  }))
+);
 
 export interface GatewayShellProps {
   tenantKey?: string;
   initialModule?: GatewayModule;
+  initialOnboardingMode?: 'self' | 'partner_assisted' | 'edit';
+  initialQuestionsUrl?: string;
   initialTheme?: ThemeConfig;
   initialLanguage?: SupportedLanguage;
   initialApiMode?: ApiMode;
@@ -70,13 +77,18 @@ export interface GatewayShellProps {
 const GatewayShellInner: React.FC<GatewayShellProps> = ({
   tenantKey = 'savanna-demo-tenant',
   initialModule = 'home',
+  initialOnboardingMode = 'self',
+  initialQuestionsUrl,
   initialTheme = PRESET_THEMES.alx,
   isDemoMode = true,
   hostElement = null,
 }) => {
   const { t, metadata } = useI18n();
   const [activeModule, setActiveModule] = useState<GatewayModule>(initialModule);
-  const [partnerAssisted, setPartnerAssisted] = useState(false);
+  const [partnerAssisted, setPartnerAssisted] = useState(
+    initialOnboardingMode === 'partner_assisted'
+  );
+  const [easyRead, setEasyRead] = useState(false);
   const [rawTheme, setRawTheme] = useState<ThemeConfig>(initialTheme);
   const [colorMode, setColorMode] = useState<ColorMode>(getInitialColorMode);
   const [themeDrawerOpen, setThemeDrawerOpen] = useState(false);
@@ -91,6 +103,10 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
   useEffect(() => {
     setActiveModule(initialModule);
   }, [initialModule]);
+
+  useEffect(() => {
+    setPartnerAssisted(initialOnboardingMode === 'partner_assisted');
+  }, [initialOnboardingMode]);
 
   useEffect(() => {
     setRawTheme(initialTheme);
@@ -166,9 +182,10 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
   return (
     <div
       dir={metadata.dir}
+      lang={metadata.code}
       style={themeCssVars}
-      className={`${
-        colorMode === 'dark' ? 'dark' : ''
+      className={`${colorMode === 'dark' ? 'dark' : ''} ${
+        easyRead ? 'gw-easy-read' : ''
       } min-h-screen flex flex-col bg-[var(--gw-bg-canvas)] text-[var(--gw-text-primary)] font-[var(--gw-font-sans)] transition-colors`}
     >
       <SkipLink targetId="gw-main-content" />
@@ -184,54 +201,91 @@ const GatewayShellInner: React.FC<GatewayShellProps> = ({
         apiMode={apiMode}
         colorMode={colorMode}
         onToggleColorMode={handleToggleColorMode}
+        easyRead={easyRead}
+        onToggleEasyRead={() => setEasyRead((prev) => !prev)}
         onOpenThemeDrawer={() => setThemeDrawerOpen(true)}
         onOpenVoiceAssistant={() => setVoiceAssistantOpen(true)}
       />
 
       <main id="gw-main-content" tabIndex={-1} className="flex-1 gw-container py-6 sm:py-10 focus:outline-none">
-        {activeModule === 'home' && (
-          <MainGateway theme={validatedTheme} onNavigate={handleNavigate} />
-        )}
+        {initialQuestionsUrl ? (
+          <Suspense
+            fallback={
+              <div
+                role="status"
+                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-base font-medium text-[#0F1E36] dark:text-slate-100 shadow-sm"
+              >
+                {t.common.loadingStatus}
+              </div>
+            }
+          >
+            <JsonQuestionFlow questionsUrl={initialQuestionsUrl} hostElement={hostElement} />
+          </Suspense>
+        ) : (
+          <>
+            {activeModule === 'home' && (
+              <MainGateway theme={validatedTheme} onNavigate={handleNavigate} />
+            )}
 
-        {activeModule === 'onboarding' && (
-          <OnboardingWizard
-            tenantKey={tenantKey}
-            initialMode={partnerAssisted ? 'partner_assisted' : 'self'}
-            hostElement={hostElement}
-            onNavigateToCareers={(prefill) => {
-              if (prefill) setPrefillApplicant(prefill);
-              handleNavigate('career');
-            }}
-          />
-        )}
+            {activeModule === 'onboarding' && (
+              <OnboardingWizard
+                tenantKey={tenantKey}
+                initialMode={
+                  partnerAssisted
+                    ? 'partner_assisted'
+                    : initialOnboardingMode === 'edit'
+                    ? 'edit'
+                    : 'self'
+                }
+                hostElement={hostElement}
+                onNavigateToCareers={(prefill) => {
+                  if (prefill) setPrefillApplicant(prefill);
+                  handleNavigate('career');
+                }}
+              />
+            )}
 
-        <Suspense
-          fallback={
-            <div
-              role="status"
-              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-base font-medium text-[#0F1E36] dark:text-slate-100 shadow-sm"
+            {activeModule === 'profile' && (
+              <OnboardingWizard
+                tenantKey={tenantKey}
+                initialMode="edit"
+                hostElement={hostElement}
+                onNavigateToCareers={(prefill) => {
+                  if (prefill) setPrefillApplicant(prefill);
+                  handleNavigate('career');
+                }}
+              />
+            )}
+
+            <Suspense
+              fallback={
+                <div
+                  role="status"
+                  className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-base font-medium text-[#0F1E36] dark:text-slate-100 shadow-sm"
+                >
+                  {t.common.loadingStatus}
+                </div>
+              }
             >
-              {t.common.loadingStatus}
-            </div>
-          }
-        >
-          {activeModule === 'career' && (
-            <CareerGateway prefillApplicant={prefillApplicant} hostElement={hostElement} />
-          )}
+              {activeModule === 'career' && (
+                <CareerGateway prefillApplicant={prefillApplicant} hostElement={hostElement} />
+              )}
 
-          {activeModule === 'employer' && (
-            <EmployerAccommodationForm
-              onPublishedNavigateToCareers={() => handleNavigate('career')}
-            />
-          )}
+              {activeModule === 'employer' && (
+                <EmployerAccommodationForm
+                  onPublishedNavigateToCareers={() => handleNavigate('career')}
+                />
+              )}
 
-          {activeModule === 'judge' && isDemoMode && (
-            <JudgeChecklistPage
-              onNavigate={handleNavigate}
-              onOpenThemeDrawer={() => setThemeDrawerOpen(true)}
-            />
-          )}
-        </Suspense>
+              {activeModule === 'judge' && isDemoMode && (
+                <JudgeChecklistPage
+                  onNavigate={handleNavigate}
+                  onOpenThemeDrawer={() => setThemeDrawerOpen(true)}
+                />
+              )}
+            </Suspense>
+          </>
+        )}
       </main>
 
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-[#F3F4F6] dark:bg-slate-900 py-6 text-xs sm:text-sm text-slate-700 dark:text-slate-300">

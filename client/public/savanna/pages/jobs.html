@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accessible Jobs — Savanna Host</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #f3f4f6;
+        color: #0f1e36;
+      }
+      .shell {
+        display: grid;
+        grid-template-columns: 1fr;
+        min-height: 100vh;
+      }
+      @media (min-width: 900px) {
+        .shell {
+          grid-template-columns: 16rem 1fr;
+        }
+      }
+      .sidebar {
+        background: #0f1e36;
+        color: #ffffff;
+        padding: 1.5rem 1rem;
+      }
+      .sidebar h1 {
+        font-size: 1.125rem;
+        margin: 0 0 1.25rem;
+      }
+      .sidebar ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        padding-inline: 0.875rem;
+        border-radius: 0.5rem;
+        color: #e2e8f0;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .sidebar a[aria-current="page"] {
+        background: #f59e0b;
+        color: #0f1e36;
+      }
+      .sidebar a:focus-visible,
+      .toolbar button:focus-visible {
+        outline: 3px solid #fbbf24;
+        outline-offset: 2px;
+      }
+      .content {
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+      }
+      .toolbar button,
+      .toolbar a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #94a3b8;
+        background: #ffffff;
+        color: #0f1e36;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+    <script src="../../accessible-gateway.js" defer></script>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar" aria-label="Savanna portal navigation">
+        <h1>Savanna Learner</h1>
+        <nav aria-label="Savanna sidebar">
+          <ul>
+            <li><a href="../../demo-savanna-host.html">Registration</a></li>
+            <li><a href="./profile.html">My Profile</a></li>
+            <li><a href="./jobs.html" aria-current="page">Accessible Jobs</a></li>
+          </ul>
+        </nav>
+      </aside>
+      <main class="content">
+        <div class="toolbar">
+          <button type="button" onclick="openJobsGateway()">Browse Jobs &amp; Apply</button>
+          <button type="button" onclick="openQuestionsApply()">Open JSON Job-Apply Flow</button>
+          <a href="../../demo/data/jobs.json">View demo/data/jobs.json</a>
+        </div>
+        <accessible-gateway
+          id="savanna-jobs-gateway"
+          tenant-key="SAVANNA_ALX_DEMO"
+          module="career"
+          theme="alx"
+          lang="en"
+          api-mode="mock"
+          demo="true"
+        ></accessible-gateway>
+      </main>
+    </div>
+    <script>
+      const gw = document.getElementById('savanna-jobs-gateway');
+      function openJobsGateway() {
+        gw.removeAttribute('questions');
+        gw.setAttribute('module', 'career');
+      }
+      function openQuestionsApply() {
+        gw.setAttribute('questions', '../../questions/job-apply.json');
+      }
+    </script>
+  </body>
+</html>

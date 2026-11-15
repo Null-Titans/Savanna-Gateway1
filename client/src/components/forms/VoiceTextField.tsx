@@ -59,6 +59,7 @@ export const VoiceTextField: React.FC<VoiceTextFieldProps> = ({
     languageNotSupportedInBrowser,
     canFallbackToBrowserEnglish,
     micPermission,
+    voiceNoteUrl,
     startListening,
     stopListening,
     discardTranscript,
@@ -311,6 +312,12 @@ export const VoiceTextField: React.FC<VoiceTextFieldProps> = ({
                         </button>
                       )}
                   </div>
+                  {voiceNoteUrl && (
+                    <div className="pt-2 space-y-1.5 border-t border-amber-300/60 dark:border-amber-700/60">
+                      <p className="text-xs font-medium">{t.voice.voiceNoteFallbackNotice}</p>
+                      <audio controls src={voiceNoteUrl} className="w-full h-10" />
+                    </div>
+                  )}
                 </div>
               )}
 

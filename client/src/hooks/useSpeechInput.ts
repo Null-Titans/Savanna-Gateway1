@@ -37,6 +37,9 @@ export function useSpeechInput(
   const [micPermission, setMicPermission] = useState<MicrophonePermissionState>('unknown');
   const [languageNotSupportedInBrowser, setLanguageNotSupportedInBrowser] = useState(false);
   const [canFallbackToBrowserEnglish, setCanFallbackToBrowserEnglish] = useState(false);
+  // ADDED: In-memory-only temporary voice-note URL when offline/transcription fails
+  const [voiceNoteUrl, setVoiceNoteUrl] = useState<string | null>(null);
+  const voiceNoteUrlRef = useRef<string | null>(null);
 
   const statusRef = useRef<VoiceInputStatus>('idle');
   const recognitionRef = useRef<SpeechRecognitionInstanceLike | null>(null);
@@ -181,14 +184,27 @@ export function useSpeechInput(
     }
   }, [clearAudioMonitor]);
 
+  const revokeVoiceNote = useCallback(() => {
+    if (voiceNoteUrlRef.current) {
+      try {
+        URL.revokeObjectURL(voiceNoteUrlRef.current);
+      } catch {
+        // Ignore revoke errors
+      }
+      voiceNoteUrlRef.current = null;
+      setVoiceNoteUrl(null);
+    }
+  }, []);
+
   // Automatically stop listening and release microphone on unmount
   useEffect(() => {
     return () => {
       activeSessionIdRef.current += 1;
       stopListening();
       stopMediaTracks();
+      revokeVoiceNote();
     };
-  }, [stopListening, stopMediaTracks]);
+  }, [revokeVoiceNote, stopListening, stopMediaTracks]);
 
   const startServerRecording = useCallback(
     async (sessionId: number) => {
@@ -266,6 +282,15 @@ export function useSpeechInput(
           } catch (err) {
             if (activeSessionIdRef.current !== sessionId) {
               return;
+            }
+            // ADDED: Keep local playable voice-note fallback in memory when offline or server fails
+            try {
+              const objUrl = URL.createObjectURL(blob);
+              revokeVoiceNote();
+              voiceNoteUrlRef.current = objUrl;
+              setVoiceNoteUrl(objUrl);
+            } catch {
+              // Ignore object URL creation errors in test environments
             }
             setStatusSafe('error');
             setCanFallbackToBrowserEnglish(isBrowserSpeechRecognitionSupported());
@@ -594,6 +619,7 @@ export function useSpeechInput(
       const sessionId = activeSessionIdRef.current;
 
       stopListening();
+      revokeVoiceNote();
       manualStopRef.current = false;
       latestTranscriptRef.current = '';
       setErrorDetail(null);
@@ -631,13 +657,14 @@ export function useSpeechInput(
     activeSessionIdRef.current += 1;
     stopListening();
     stopMediaTracks();
+    revokeVoiceNote();
     latestTranscriptRef.current = '';
     setTranscript('');
     setDetectedLanguage(null);
     setErrorDetail(null);
     setCanFallbackToBrowserEnglish(false);
     setStatusSafe(recognitionAvailable ? 'idle' : 'unsupported');
-  }, [recognitionAvailable, setStatusSafe, stopListening, stopMediaTracks]);
+  }, [recognitionAvailable, revokeVoiceNote, setStatusSafe, stopListening, stopMediaTracks]);
 
   return {
     status,
@@ -651,6 +678,7 @@ export function useSpeechInput(
     canFallbackToBrowserEnglish,
     micPermission,
     usingServerStt,
+    voiceNoteUrl,
     startListening,
     stopListening,
     discardTranscript,

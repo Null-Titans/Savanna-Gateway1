@@ -1,0 +1,74 @@
+{
+  "id": "job-apply",
+  "title": "Accessible Job Application",
+  "description": "Guided one-question-per-screen job application powered by the same question engine.",
+  "submitLabel": "Submit job application",
+  "doneMessage": "Your job application has been recorded.",
+  "questions": [
+    {
+      "id": "applicantName",
+      "type": "text",
+      "label": "Your full name",
+      "helpText": "Enter the name you want the hiring team to see.",
+      "whyWeAsk": "Identifies your application.",
+      "required": true
+    },
+    {
+      "id": "applicantPhone",
+      "type": "phone",
+      "label": "Best phone number for interview updates",
+      "helpText": "Accepts Ethiopian formats (09..., 07..., +251...).",
+      "whyWeAsk": "Used only to arrange interviews for this role.",
+      "required": true
+    },
+    {
+      "id": "experienceSummary",
+      "type": "textarea",
+      "label": "Tell the employer what makes you a good fit",
+      "helpText": "Speak or type a few plain sentences about your skills or experience.",
+      "whyWeAsk": "Helps the hiring team learn about your strengths without requiring a formal CV.",
+      "required": true
+    },
+    {
+      "id": "preferredFormat",
+      "type": "radio",
+      "label": "Preferred interview format",
+      "helpText": "Select the interview setup that works best for you.",
+      "whyWeAsk": "Allows the employer to prepare your preferred interview setup.",
+      "required": false,
+      "optional": true,
+      "options": [
+        { "value": "written_qa", "label": "Written questions and chat" },
+        { "value": "video_captions", "label": "Video call with live captions" },
+        { "value": "phone_or_in_person", "label": "Phone call or accessible in-person room" }
+      ]
+    },
+    {
+      "id": "requestedAdjustments",
+      "type": "checkbox",
+      "label": "Optional interview adjustments to share with this employer",
+      "helpText": "Only the boxes you check here are shared with this employer.",
+      "whyWeAsk": "Keeps you in control of any adjustment shared.",
+      "required": false,
+      "optional": true,
+      "options": [
+        { "value": "interpreter", "label": "Sign-language interpreter for interviews" },
+        { "value": "screen_reader", "label": "Screen-reader compatible assessment files" },
+        { "value": "extra_time", "label": "Extra time or questions shared in advance" }
+      ]
+    },
+    {
+      "id": "consent",
+      "type": "consent",
+      "label": "Permission to send application",
+      "helpText": "I give permission to submit this application and any interview adjustment selected above.",
+      "whyWeAsk": "Ensures no details are sent without your explicit approval.",
+      "required": true
+    },
+    {
+      "id": "review",
+      "type": "review",
+      "label": "Review your application"
+    }
+  ]
+}

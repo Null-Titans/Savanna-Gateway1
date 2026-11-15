@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Code2, Send } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { JobPosting } from '../../types/gateway';
 import { buildJobPostingJsonLd } from '../../utils/jsonLd';
+import { ReadAloudButton } from '../accessibility/ReadAloudButton';
 
 interface JobCardProps {
   job: JobPosting;
@@ -152,24 +153,29 @@ export const JobCard: React.FC<JobCardProps> = ({ job, onApply }) => {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          aria-expanded={expanded}
-          className="inline-flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
-        >
-          {expanded ? (
-            <>
-              <ChevronUp className="w-4 h-4" aria-hidden="true" />
-              <span>{t.career.hideDetails}</span>
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-4 h-4" aria-hidden="true" />
-              <span>{t.career.viewDetails}</span>
-            </>
-          )}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            aria-expanded={expanded}
+            className="inline-flex items-center gap-1.5 min-h-[44px] px-4 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-[#0F1E36] dark:text-slate-100 hover:bg-[#F3F4F6] dark:hover:bg-slate-700 transition-colors cursor-pointer"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="w-4 h-4" aria-hidden="true" />
+                <span>{t.career.hideDetails}</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4" aria-hidden="true" />
+                <span>{t.career.viewDetails}</span>
+              </>
+            )}
+          </button>
+          <ReadAloudButton
+            textToRead={`${job.title} at ${job.organization}, ${job.location}. ${job.descriptionSummary}. Accommodations offered: ${job.accommodationsOffered.join(', ')}.`}
+          />
+        </div>
 
         <button
           type="button"

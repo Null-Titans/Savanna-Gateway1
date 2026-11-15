@@ -11,6 +11,8 @@ import {
 } from '../../types/gateway';
 import { gatewayApi } from '../../services/api/client';
 import { emitGatewayEvent } from '../../utils/events';
+import { formatEthiopianDate, normalizeEthiopianPhone } from '../../utils/coreHelpers.mjs';
+import { LiveRegion } from '../accessibility/LiveRegion';
 import {
   deleteDraftFromIndexedDB,
   loadDraftFromIndexedDB,
@@ -24,7 +26,7 @@ import { FormErrorItem } from '../forms/ErrorSummary';
 
 interface OnboardingWizardProps {
   tenantKey: string;
-  initialMode?: 'self' | 'partner_assisted';
+  initialMode?: 'self' | 'partner_assisted' | 'edit';
   hostElement?: HTMLElement | null;
   onNavigateToCareers: (prefill?: { name: string; contact: string }) => void;
 }
@@ -58,15 +60,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   onNavigateToCareers,
 }) => {
   const { language, t } = useI18n();
+  const isEditMode = initialMode === 'edit';
   const [draft, setDraft] = useState<OnboardingDraft>({
     ...DEFAULT_DRAFT,
-    registrationMode: initialMode,
+    registrationMode: initialMode === 'partner_assisted' ? 'partner_assisted' : 'self',
   });
+  const [learnerId, setLearnerId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [isReview, setIsReview] = useState(false);
   const [receipt, setReceipt] = useState<SubmissionReceipt | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [networkNotice, setNetworkNotice] = useState<string>('');
   const [storageStatus, setStorageStatus] = useState<SaveStorageStatus>('memory_only');
   const [existingDeviceDraft, setExistingDeviceDraft] = useState<SanitizedLocalDraft | null>(null);
   const [capabilities, setCapabilities] = useState<ApiCapabilities>({
@@ -94,10 +99,32 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     void loadDraftFromIndexedDB().then((found) => {
       if (found) setExistingDeviceDraft(found);
     });
-  }, []);
+    if (isEditMode) {
+      void gatewayApi.getLearner().then((saved) => {
+        if (saved) {
+          setLearnerId(saved.id);
+          setDraft((prev) => ({
+            ...prev,
+            isSharedDevice: false,
+            registrationMode: saved.registrationMode,
+            fullName: saved.fullName,
+            contactMethod: saved.contactMethod,
+            contactValue: saved.contactValue,
+            identityRoute: saved.identityRoute,
+            partnerReferralOrg: saved.partnerReferralOrg,
+            supportPreferences: saved.supportPreferences || [],
+            supportNotes: saved.supportNotes || '',
+            partnerConsent: saved.partnerConsent || prev.partnerConsent,
+          }));
+        }
+      });
+    }
+  }, [isEditMode]);
 
   useEffect(() => {
-    setDraft((prev) => ({ ...prev, registrationMode: initialMode }));
+    if (initialMode !== 'edit') {
+      setDraft((prev) => ({ ...prev, registrationMode: initialMode }));
+    }
   }, [initialMode]);
 
   const updateDraft = useCallback((patch: Partial<OnboardingDraft>) => {
@@ -273,6 +300,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             return [
               { fieldId: 'gw-onboarding-contact', message: t.onboarding.errors.emptyContactValue },
             ];
+          }
+          if (draft.contactMethod === 'phone' && draft.contactValue.trim()) {
+            const normalized = normalizeEthiopianPhone(draft.contactValue);
+            if (!normalized) {
+              return [
+                { fieldId: 'gw-onboarding-contact', message: t.onboarding.errors.invalidEthiopianPhone },
+              ];
+            }
+            if (normalized !== draft.contactValue) {
+              updateDraft({ contactValue: normalized });
+            }
           }
           return [];
         },
@@ -561,7 +599,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             </label>
             {draft.partnerConsent?.learnerConsented && draft.partnerConsent.recordedAtIso && (
               <p className="text-xs text-emerald-900 dark:text-emerald-100 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 rounded-md px-3 py-2">
-                Consent timestamp recorded: {new Date(draft.partnerConsent.recordedAtIso).toLocaleString()}
+                Consent timestamp recorded: {new Date(draft.partnerConsent.recordedAtIso).toLocaleString()} (
+                {formatEthiopianDate(draft.partnerConsent.recordedAtIso)})
               </p>
             )}
           </div>
@@ -587,16 +626,47 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         },
         hostElement
       );
+      emitGatewayEvent(
+        'db-signup:step',
+        {
+          step: nextIdx + 1,
+          of: steps.length + 1,
+        },
+        hostElement
+      );
     }
   };
 
-  const handleSubmitFinal = async () => {
+  const handleSubmitFinal = useCallback(async () => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await gatewayApi.submitOnboarding(draft);
+      const normalizedDraft =
+        draft.contactMethod === 'phone' && draft.contactValue.trim()
+          ? { ...draft, contactValue: normalizeEthiopianPhone(draft.contactValue) || draft.contactValue }
+          : draft;
+
+      let res: SubmissionReceipt;
+      if (isEditMode && learnerId) {
+        const updated = await gatewayApi.updateLearner(learnerId, normalizedDraft);
+        res = {
+          id: updated.id,
+          submittedAtIso: updated.updatedAtIso,
+          mode: gatewayApi.getMode(),
+          persistedToServer: gatewayApi.getMode() === 'real',
+          notice: t.onboarding.editModeSavedNote,
+        };
+      } else {
+        res = await gatewayApi.submitOnboarding(normalizedDraft);
+      }
+
       setReceipt(res);
       setStorageStatus(res.persistedToServer ? 'server_saved' : storageStatus);
+
+      const emittedIdRoute =
+        normalizedDraft.identityRoute === 'no_documents' || normalizedDraft.identityRoute === 'partner_referral'
+          ? 'partner-referral'
+          : normalizedDraft.identityRoute;
 
       // Privacy rule: NEVER include private support preferences or identity numbers in custom event
       emitGatewayEvent(
@@ -604,16 +674,39 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         {
           submissionId: res.id,
           mode: res.mode,
-          registrationMode: draft.registrationMode,
-          identityRoute: draft.identityRoute,
-          supportRequestedFlag: draft.supportPreferences.length > 0,
+          registrationMode: normalizedDraft.registrationMode,
+          identityRoute: normalizedDraft.identityRoute,
+          supportRequestedFlag: normalizedDraft.supportPreferences.length > 0,
         },
         hostElement
       );
 
-      if (draft.supportPreferences.length > 0) {
+      emitGatewayEvent(
+        'db-signup:done',
+        {
+          submissionId: res.id,
+          mode: isEditMode ? 'edit' : res.mode,
+          profile: {
+            id: res.id,
+            fullName: normalizedDraft.fullName,
+            contactMethod: normalizedDraft.contactMethod,
+            idRoute: emittedIdRoute,
+            registrationMode: normalizedDraft.registrationMode,
+          },
+        },
+        hostElement
+      );
+
+      if (normalizedDraft.supportPreferences.length > 0) {
         emitGatewayEvent(
           'gateway:support-requested',
+          {
+            hasSupportRequest: true,
+          },
+          hostElement
+        );
+        emitGatewayEvent(
+          'db-signup:support',
           {
             hasSupportRequest: true,
           },
@@ -635,7 +728,27 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [draft, hostElement, isEditMode, learnerId, storageStatus, t.onboarding.editModeSavedNote]);
+
+  // ADDED: Resilience — listen to offline/online events, announce in live region, auto-retry failed submit
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onOffline = () => {
+      setNetworkNotice(t.common.offlineNotice);
+    };
+    const onOnline = () => {
+      setNetworkNotice(t.common.onlineRetryNotice);
+      if (submitError && !isSubmitting) {
+        void handleSubmitFinal();
+      }
+    };
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
+    return () => {
+      window.removeEventListener('offline', onOffline);
+      window.removeEventListener('online', onOnline);
+    };
+  }, [handleSubmitFinal, isSubmitting, submitError, t.common.offlineNotice, t.common.onlineRetryNotice]);
 
   if (receipt) {
     return (
@@ -650,16 +763,30 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 {t.onboarding.confirmationTitle}
               </h2>
               <p className="text-sm font-mono text-slate-600 dark:text-slate-300 tabular-nums">
-                Reference: {receipt.id}
+                Reference: {receipt.id} · {formatEthiopianDate(receipt.submittedAtIso)}
               </p>
             </div>
           </div>
 
           <p className="text-base text-[#0F1E36] dark:text-slate-100 bg-[#F3F4F6] dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-            {receipt.persistedToServer
+            {isEditMode
+              ? t.onboarding.editModeSavedNote
+              : receipt.persistedToServer
               ? t.onboarding.confirmationRealNote
               : t.onboarding.confirmationDemoNote}
           </p>
+
+          {draft.registrationMode === 'partner_assisted' && (
+            <p className="text-base font-semibold text-[#0F1E36] dark:text-amber-100 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 rounded-xl p-4">
+              {t.onboarding.partnerConfirmationNote}
+            </p>
+          )}
+
+          {(draft.identityRoute === 'no_documents' || draft.identityRoute === 'partner_referral') && (
+            <p className="text-sm text-[#0F1E36] dark:text-slate-200 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-xl p-4">
+              {t.onboarding.referralNextStepNote}
+            </p>
+          )}
 
           <div className="flex flex-wrap gap-3 pt-2">
             <button
@@ -693,12 +820,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      <LiveRegion message={networkNotice} politeness="polite" />
       <OneQuestionEngine
-        flowTitle={t.onboarding.pageTitle}
+        flowTitle={isEditMode ? t.onboarding.editModeTitle : t.onboarding.pageTitle}
         steps={steps}
         currentStepIndex={stepIndex}
         onStepChange={handleStepChange}
-        onCompleteReview={() => setIsReview(true)}
+        onCompleteReview={() => {
+          setIsReview(true);
+          emitGatewayEvent('db-signup:step', { step: steps.length + 1, of: steps.length + 1 }, hostElement);
+        }}
         isReviewStep={isReview}
         onSubmitFinal={handleSubmitFinal}
         isSubmitting={isSubmitting}

@@ -1,0 +1,75 @@
+{
+  "id": "employer-accommodations",
+  "title": "Employer Workplace Accommodations Form",
+  "description": "Plain-language employer intake form focused on workplace support rather than medical questions.",
+  "submitLabel": "Publish accommodation details",
+  "doneMessage": "Workplace accommodations saved for this job posting.",
+  "questions": [
+    {
+      "id": "jobTitle",
+      "type": "text",
+      "label": "Job title",
+      "helpText": "Use clear, everyday wording for the role.",
+      "whyWeAsk": "Helps job seekers find relevant roles.",
+      "required": true
+    },
+    {
+      "id": "contactPhone",
+      "type": "phone",
+      "label": "Hiring coordinator phone number",
+      "helpText": "Ethiopian phone numbers are normalized to +251XXXXXXXXX.",
+      "whyWeAsk": "Allows applicants or partner coordinators to confirm interview access.",
+      "required": false,
+      "optional": true
+    },
+    {
+      "id": "workArrangement",
+      "type": "radio",
+      "label": "Work location arrangement",
+      "helpText": "Choose the flexibility available for this role.",
+      "whyWeAsk": "Candidates often filter roles by remote or flexible access.",
+      "required": true,
+      "options": [
+        { "value": "remote", "label": "100% remote" },
+        { "value": "hybrid", "label": "Hybrid (remote and accessible hub)" },
+        { "value": "onsite", "label": "On-site accessible workplace" }
+      ]
+    },
+    {
+      "id": "accommodations",
+      "type": "checkbox",
+      "label": "Workplace and interview support available",
+      "helpText": "Check every accommodation your team provides.",
+      "whyWeAsk": "Lists concrete workplace support transparently on the job card.",
+      "required": true,
+      "options": [
+        { "value": "interpreter_for_interviews", "label": "Interpreter for interviews" },
+        { "value": "screen_reader_friendly", "label": "Screen-reader friendly workplace and tools" },
+        { "value": "flexible_hours", "label": "Flexible start times or hours" },
+        { "value": "step_free_access", "label": "Step-free physical access" }
+      ]
+    },
+    {
+      "id": "additionalSupport",
+      "type": "textarea",
+      "label": "Describe any extra support offered",
+      "helpText": "Describe adjustments you offer—never ask applicants for a medical diagnosis.",
+      "whyWeAsk": "Gives candidates clarity before applying.",
+      "required": false,
+      "optional": true
+    },
+    {
+      "id": "fairnessConsent",
+      "type": "consent",
+      "label": "Confirm privacy and non-medical pledge",
+      "helpText": "I confirm this posting describes workplace accommodations and does not ask candidates for medical proof or a diagnosis.",
+      "whyWeAsk": "Protects learner privacy across the gateway.",
+      "required": true
+    },
+    {
+      "id": "review",
+      "type": "review",
+      "label": "Review employer accommodation details"
+    }
+  ]
+}

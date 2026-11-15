@@ -9,6 +9,8 @@ import { ApiMode } from '../services/api/client';
 const OBSERVED_ATTRS = [
   'tenant-key',
   'module',
+  'mode',
+  'questions',
   'theme',
   'primary-color',
   'secondary-color',
@@ -77,10 +79,19 @@ export class AccessibleGatewayElement extends HTMLElement {
 
   private resolveModule(): GatewayModule {
     const attr = (this.getAttribute('module') || 'all').toLowerCase();
-    if (attr === 'onboarding') return 'onboarding';
+    const modeAttr = (this.getAttribute('mode') || '').toLowerCase();
+    if (attr === 'profile' || modeAttr === 'edit') return 'profile';
+    if (attr === 'onboarding' || modeAttr === 'partner') return 'onboarding';
     if (attr === 'career') return 'career';
     if (attr === 'employer') return 'employer';
     return 'home';
+  }
+
+  private resolveOnboardingMode(): 'self' | 'partner_assisted' | 'edit' {
+    const modeAttr = (this.getAttribute('mode') || '').toLowerCase();
+    if (modeAttr === 'edit') return 'edit';
+    if (modeAttr === 'partner' || modeAttr === 'partner_assisted') return 'partner_assisted';
+    return 'self';
   }
 
   private resolveTheme(): ThemeConfig {
@@ -108,12 +119,15 @@ export class AccessibleGatewayElement extends HTMLElement {
     const apiMode = (this.getAttribute('api-mode') || 'mock') as ApiMode;
     const apiBaseUrl = this.getAttribute('api-base-url') || '';
     const isDemoMode = this.getAttribute('demo') !== 'false';
+    const questionsUrl = this.getAttribute('questions') || undefined;
 
     this.reactRoot.render(
       <React.StrictMode>
         <GatewayShell
           tenantKey={tenantKey}
           initialModule={this.resolveModule()}
+          initialOnboardingMode={this.resolveOnboardingMode()}
+          initialQuestionsUrl={questionsUrl}
           initialTheme={this.resolveTheme()}
           initialLanguage={langAttr}
           initialApiMode={apiMode}

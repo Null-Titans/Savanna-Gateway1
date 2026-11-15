@@ -3,8 +3,10 @@ import {
   ApiCapabilities,
   JobApplicationDraft,
   JobPosting,
+  LearnerProfile,
   OnboardingDraft,
   SubmissionReceipt,
+  SupportPreference,
 } from '../../types/gateway';
 
 const INITIAL_DEMO_JOBS: JobPosting[] = [
@@ -107,10 +109,122 @@ const INITIAL_DEMO_JOBS: JobPosting[] = [
     postedAtIso: '2026-11-08T12:00:00Z',
     isDemoData: true,
   },
+  // ADDED: Additional demo jobs (total 6) covering interpreter, screen-reader workplace, and remote
+  {
+    id: 'demo-job-4',
+    title: 'Amharic & English Content Reviewer',
+    organization: 'EthioEd Open Publishing (Demo Employer)',
+    location: 'Remote (Addis Ababa / Nationwide)',
+    isRemote: true,
+    employmentType: 'Contract',
+    descriptionSummary:
+      'Proofread short learning lessons in Amharic and English and verify plain-language headings.',
+    requiredSkills: ['Amharic reading', 'Plain-language editing', 'Reliable chat check-ins'],
+    accommodationCategories: ['remote_flexible', 'flexible_hours', 'screen_reader_tools', 'communication_support'],
+    accommodationsOffered: [
+      '100% remote with flexible daily hours',
+      'Screen-reader friendly workplace and document templates',
+      'Sign-language or written-chat interpreter for interviews',
+    ],
+    accommodationDetails: {
+      workEnvironmentAccessibility: 'Fully remote; screen-reader tested editorial platform.',
+      remoteOrFlexibleArrangements: 'Flexible 15-25 hours/week; no live calls required.',
+      assistiveTechnologyAvailable: 'Accessible markup tools and captioning support.',
+      communicationOptions: 'Interpreter for interviews on request; text-first team updates.',
+      interviewAccommodations: 'Interpreter for interviews or written Q&A option.',
+      applicationProcessAccommodations: 'Voice input and extra time accepted.',
+      additionalSupportOffered: 'Style guide provided in audio and large print.',
+    },
+    applicationDeadline: '2026-12-22',
+    postedAtIso: '2026-11-09T09:30:00Z',
+    isDemoData: true,
+  },
+  {
+    id: 'demo-job-5',
+    title: 'IT Helpdesk & Accessibility Tester',
+    organization: 'Savanna Digital Academy (Demo Employer)',
+    location: 'Addis Ababa / Hybrid',
+    isRemote: true,
+    employmentType: 'Full-time',
+    descriptionSummary:
+      'Test web pages with keyboard navigation and screen readers, and help learners reset accounts.',
+    requiredSkills: ['Keyboard navigation', 'Problem solving', 'Team communication'],
+    accommodationCategories: ['remote_flexible', 'screen_reader_tools', 'accessible_workplace', 'assistive_tech'],
+    accommodationsOffered: [
+      'Screen-reader friendly workplace with NVDA, JAWS, and VoiceOver test kits',
+      'Remote work 3 days per week',
+      'Step-free Addis Ababa hub with quiet sensory room',
+    ],
+    accommodationDetails: {
+      workEnvironmentAccessibility: 'Step-free access, adjustable desks, screen-reader friendly workplace.',
+      remoteOrFlexibleArrangements: 'Hybrid: 3 days remote, 2 days accessible hub.',
+      assistiveTechnologyAvailable: 'Screen readers, refreshable braille display on request, ergonomic gear.',
+      communicationOptions: 'Written tickets, captioned stand-ups, interpreter for interviews.',
+      interviewAccommodations: 'Questions sent 24 hours ahead; practical non-timed demo.',
+      applicationProcessAccommodations: 'No formal degree or CV upload required.',
+      additionalSupportOffered: 'Paid accessibility testing training.',
+    },
+    applicationDeadline: '2026-12-28',
+    postedAtIso: '2026-11-10T11:00:00Z',
+    isDemoData: true,
+  },
+  {
+    id: 'demo-job-6',
+    title: 'Community Outreach Coordinator',
+    organization: 'East Africa Inclusion Network (Demo Employer)',
+    location: 'Hawassa / Remote',
+    isRemote: true,
+    employmentType: 'Part-time',
+    descriptionSummary:
+      'Coordinate local registration sessions with community partners and share plain-language guides.',
+    requiredSkills: ['Afaan Oromo or Amharic', 'Community coordination', 'Listening skills'],
+    accommodationCategories: ['remote_flexible', 'flexible_hours', 'communication_support', 'other_accommodations'],
+    accommodationsOffered: [
+      'Sign-language interpreter for interviews and community events',
+      'Flexible hours around family or health schedules',
+      'Remote planning days with mobile data stipend',
+    ],
+    accommodationDetails: {
+      workEnvironmentAccessibility: 'Accessible community partner venues; remote admin work.',
+      remoteOrFlexibleArrangements: 'Flexible part-time schedule.',
+      assistiveTechnologyAvailable: 'Mobile data stipend and voice-to-text tools.',
+      communicationOptions: 'Interpreter for interviews and partner meetings.',
+      interviewAccommodations: 'Bring a support person; interpreter provided free.',
+      applicationProcessAccommodations: 'Partner referral or voice answers accepted.',
+      additionalSupportOffered: 'Peer mentorship included.',
+    },
+    postedAtIso: '2026-11-11T14:00:00Z',
+    isDemoData: true,
+  },
 ];
 
 let demoJobsStore: JobPosting[] = [...INITIAL_DEMO_JOBS];
 let simulateFlakyNetwork = false;
+const MOCK_LEARNER_STORAGE_KEY = 'gw_mock_learner_profile_v1';
+
+function readStoredMockLearner(): LearnerProfile | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    const raw = window.localStorage.getItem(MOCK_LEARNER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as LearnerProfile;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredMockLearner(profile: LearnerProfile | null): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    if (!profile) {
+      window.localStorage.removeItem(MOCK_LEARNER_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(MOCK_LEARNER_STORAGE_KEY, JSON.stringify(profile));
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 export function setSimulateFlakyNetwork(enabled: boolean): void {
   simulateFlakyNetwork = enabled;
@@ -174,13 +288,110 @@ export const mockAdapter = {
 
   async submitOnboarding(draft: OnboardingDraft): Promise<SubmissionReceipt> {
     assertNetworkHealthy();
+    const id = `demo-reg-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    if (draft.isSharedDevice !== true) {
+      const idRoute =
+        draft.identityRoute === 'no_documents' || draft.identityRoute === 'partner_referral'
+          ? 'partner-referral'
+          : draft.identityRoute;
+      writeStoredMockLearner({
+        id,
+        registrationMode: draft.registrationMode,
+        fullName: draft.fullName,
+        contactMethod: draft.contactMethod,
+        contactValue: draft.contactValue,
+        identityRoute: draft.identityRoute,
+        idRoute,
+        partnerReferralOrg: draft.partnerReferralOrg,
+        supportPreferences: draft.supportPreferences,
+        supportNotes: draft.supportNotes,
+        partnerConsent: draft.partnerConsent,
+        updatedAtIso: new Date().toISOString(),
+      });
+    }
     return {
-      id: `demo-reg-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      id,
       submittedAtIso: new Date().toISOString(),
       mode: 'mock',
       persistedToServer: false,
       notice: `Demo mode preview only (${draft.registrationMode}): validated locally; nothing was saved to a real server.`,
     };
+  },
+
+  // ADDED: Track 1 Learner CRUD mock endpoints backed by localStorage (non-sensitive fields)
+  async createLearner(draft: OnboardingDraft): Promise<LearnerProfile> {
+    assertNetworkHealthy();
+    const idRoute =
+      draft.identityRoute === 'no_documents' || draft.identityRoute === 'partner_referral'
+        ? 'partner-referral'
+        : draft.identityRoute;
+    const profile: LearnerProfile = {
+      id: `learner-${Date.now().toString(36)}`,
+      registrationMode: draft.registrationMode,
+      fullName: draft.fullName,
+      contactMethod: draft.contactMethod,
+      contactValue: draft.contactValue,
+      identityRoute: draft.identityRoute,
+      idRoute,
+      partnerReferralOrg: draft.partnerReferralOrg,
+      supportPreferences: draft.supportPreferences,
+      supportNotes: draft.supportNotes,
+      partnerConsent: draft.partnerConsent,
+      updatedAtIso: new Date().toISOString(),
+    };
+    if (draft.isSharedDevice !== true) {
+      writeStoredMockLearner(profile);
+    }
+    return profile;
+  },
+
+  async getLearner(id?: string): Promise<LearnerProfile | null> {
+    const existing = readStoredMockLearner();
+    if (!existing) return null;
+    if (id && existing.id !== id) return existing;
+    return existing;
+  },
+
+  async updateLearner(id: string, patch: Partial<OnboardingDraft>): Promise<LearnerProfile> {
+    assertNetworkHealthy();
+    const current = readStoredMockLearner();
+    const nextRoute = patch.identityRoute ?? current?.identityRoute ?? '';
+    const idRoute =
+      nextRoute === 'no_documents' || nextRoute === 'partner_referral' ? 'partner-referral' : nextRoute;
+    const updated: LearnerProfile = {
+      id: current?.id || id || `learner-${Date.now().toString(36)}`,
+      registrationMode: patch.registrationMode ?? current?.registrationMode ?? 'self',
+      fullName: patch.fullName ?? current?.fullName ?? '',
+      contactMethod: patch.contactMethod ?? current?.contactMethod ?? 'phone',
+      contactValue: patch.contactValue ?? current?.contactValue ?? '',
+      identityRoute: nextRoute,
+      idRoute,
+      partnerReferralOrg: patch.partnerReferralOrg ?? current?.partnerReferralOrg ?? '',
+      supportPreferences: patch.supportPreferences ?? current?.supportPreferences ?? [],
+      supportNotes: patch.supportNotes ?? current?.supportNotes ?? '',
+      partnerConsent: patch.partnerConsent ?? current?.partnerConsent,
+      updatedAtIso: new Date().toISOString(),
+    };
+    if (patch.isSharedDevice !== true) {
+      writeStoredMockLearner(updated);
+    }
+    return updated;
+  },
+
+  async updateLearnerSupport(
+    id: string,
+    support: { supportPreferences: SupportPreference[]; supportNotes: string }
+  ): Promise<LearnerProfile> {
+    return this.updateLearner(id, support);
+  },
+
+  async exportLearner(id?: string): Promise<LearnerProfile | null> {
+    return this.getLearner(id);
+  },
+
+  async deleteLearner(_id?: string): Promise<{ deleted: boolean }> {
+    writeStoredMockLearner(null);
+    return { deleted: true };
   },
 
   async submitJobApplication(app: JobApplicationDraft): Promise<SubmissionReceipt> {

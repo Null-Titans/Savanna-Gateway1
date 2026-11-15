@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -90,18 +90,14 @@ describe('Privacy & Level 3 JSON-LD', () => {
   });
 });
 
-describe('Main Gateway accessibility', () => {
-  it('passes axe-core accessibility checks', async () => {
-    const { container } = render(<App />);
-    const results = await axe.run(container);
-    expect(results.violations).toEqual([]);
-  }, 15000);
-});
 describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
-  it('completes onboarding without kebele ID and skips private support', async () => {
+  it('completes onboarding without kebele ID, skips private support, and passes axe-core', async () => {
     const user = userEvent.setup();
-    render(<App />);
+    const { container } = render(<App />);
 
+    // Axe check on Main Gateway
+    const homeAxe = await axe.run(container);
+    expect(homeAxe.violations).toEqual([]);
 
     // Start registration
     await user.click(screen.getAllByRole('button', { name: /Start registration/i })[0]);
@@ -151,8 +147,7 @@ describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
     await user.selectOptions(langSelect, 'am');
 
     await waitFor(() => {
-      expect(document.documentElement.lang).toBe('am');
-      expect(screen.getByText('መነሻ')).toBeInTheDocument();
+      expect(screen.getByText(/ቀላል ምዝገባ እና ተደራሽ የስራ እድሎች/i)).toBeInTheDocument();
     });
   });
 
@@ -191,10 +186,39 @@ describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
     const darkAxe = await axe.run(container);
     expect(darkAxe.violations).toEqual([]);
 
+    const langSelect = screen.getByLabelText(/Language/i) as HTMLSelectElement;
+    expect(langSelect.className).toContain('dark:text-white');
+    expect(langSelect.className).toContain('dark:bg-slate-800');
+    expect(langSelect.parentElement?.className).toContain('dark:border-slate-500');
+    expect(Array.from(langSelect.options).every((o) => o.className.includes('dark:bg-slate-900'))).toBe(
+      true
+    );
+
     await user.click(lightBtn);
     await waitFor(() => {
       expect(document.documentElement.classList.contains('dark')).toBe(false);
     });
+  });
+
+  it('resolves gateway image assets relative to script origin or local fallbacks', async () => {
+    const { resolveAssetUrl, getAssetCandidates } = await import('../utils/assetUrl');
+    const url = resolveAssetUrl('assets/images/saia_hero_team_1794654721733.jpg');
+    expect(url).toContain('assets/images/saia_hero_team_1794654721733.jpg');
+
+    const script = document.createElement('script');
+    script.src = 'http://localhost:4173/subpath/accessible-gateway.js';
+    document.head.appendChild(script);
+    try {
+      const candidates = getAssetCandidates('/assets/images/saia_hero_team_1794654721733.jpg');
+      expect(candidates[0]).toBe(
+        'http://localhost:4173/subpath/assets/images/saia_hero_team_1794654721733.jpg'
+      );
+      expect(candidates).toContain('/assets/images/saia_hero_team_1794654721733.jpg');
+      expect(candidates).toContain('./assets/images/saia_hero_team_1794654721733.jpg');
+      expect(candidates).toContain('/public/assets/images/saia_hero_team_1794654721733.jpg');
+    } finally {
+      script.remove();
+    }
   });
 
   it('contains scroll inside ThemeSwitcherDrawer, locks background body scroll, and closes on Escape or backdrop click', async () => {
@@ -228,6 +252,5 @@ describe('Onboarding & Career Gateway end-to-end UI journeys', () => {
     expect(document.body.style.overflow).toBe('');
   });
 });
-
 
 

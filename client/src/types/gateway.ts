@@ -2,7 +2,7 @@ export type SupportedLanguage = 'en' | 'am' | 'om';
 export type ActiveLanguage = SupportedLanguage;
 export type SpeechLanguageOption = 'auto' | SupportedLanguage;
 
-export type GatewayModule = 'home' | 'onboarding' | 'career' | 'employer' | 'judge';
+export type GatewayModule = 'home' | 'onboarding' | 'profile' | 'career' | 'employer' | 'judge';
 
 export type IdentityRoute =
   | 'national_id'
@@ -54,6 +54,22 @@ export interface OnboardingDraft {
   partnerReferralOrg: string;
   supportPreferences: SupportPreference[];
   supportNotes: string;
+  partnerConsent?: ConsentRecord;
+  updatedAtIso: string;
+}
+
+// ADDED: Track 1 Learner Profile record for /api/v1/learners CRUD & profile edit mode
+export interface LearnerProfile {
+  id: string;
+  registrationMode: 'self' | 'partner_assisted';
+  fullName: string;
+  contactMethod: 'phone' | 'email' | 'partner_contact' | 'none';
+  contactValue: string;
+  identityRoute: IdentityRoute | '';
+  idRoute: string;
+  partnerReferralOrg: string;
+  supportPreferences?: SupportPreference[];
+  supportNotes?: string;
   partnerConsent?: ConsentRecord;
   updatedAtIso: string;
 }
@@ -141,7 +157,11 @@ export type GatewayEventName =
   | 'gateway:onboarding-submitted'
   | 'gateway:support-requested'
   | 'gateway:job-applied'
-  | 'gateway:error';
+  | 'gateway:error'
+  // ADDED: Track 1 db-signup compatible events
+  | 'db-signup:step'
+  | 'db-signup:done'
+  | 'db-signup:support';
 
 export interface GatewayEventPayloadMap {
   'gateway:onboarding-started': {
@@ -150,7 +170,7 @@ export interface GatewayEventPayloadMap {
     timestamp: string;
   };
   'gateway:step-changed': {
-    flow: 'onboarding' | 'job_application';
+    flow: 'onboarding' | 'job_application' | 'json_form';
     stepId: string;
     stepIndex: number;
     totalSteps: number;
@@ -183,5 +203,24 @@ export interface GatewayEventPayloadMap {
     code: string;
     message: string;
     recoverable: boolean;
+  };
+  // ADDED: Track 1 db-signup event payloads
+  'db-signup:step': {
+    step: number;
+    of: number;
+  };
+  'db-signup:done': {
+    submissionId: string;
+    mode: 'mock' | 'real' | 'edit';
+    profile: {
+      id?: string;
+      fullName: string;
+      contactMethod: string;
+      idRoute: string;
+      registrationMode: 'self' | 'partner_assisted';
+    };
+  };
+  'db-signup:support': {
+    hasSupportRequest: boolean;
   };
 }
